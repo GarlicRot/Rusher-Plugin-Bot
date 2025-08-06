@@ -18,30 +18,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Get full commit log
+      - name: Generate full changelog
+        shell: bash
         run: |
-          git log --pretty=format:"%H|%ad|%s|%an" --date=format:'%Y-%m-%d' > full_commit_log.txt
-
-      - name: Generate CHANGELOG.md
-        run: |
-          declare -A DATES=()
-          while IFS='|' read -r HASH DATE MSG AUTHOR; do
-            SHORT_HASH=${HASH:0:7}
-            ENTRY="- \`${MSG}\` ([\`${SHORT_HASH}\`](https://github.com/${{ github.repository }}/commit/${HASH})) by **${AUTHOR}**"
-            DATES["$DATE"]+="${ENTRY}\n"
-          done < full_commit_log.txt
-
-          echo "# 📝 Changelog" > CHANGELOG.md
+          echo "#Changelog" > CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "This changelog is automatically generated." >> CHANGELOG.md
 
-          for DATE in $(printf "%s\n" "${!DATES[@]}" | sort -r); do
-            echo -e "\n---\n\n### ${DATE}" >> CHANGELOG.md
-            echo -e "${DATES[$DATE]}" >> CHANGELOG.md
-          done
+          git log --pretty=format:"%H|%ad|%s|%an" --date=format:'%Y-%m-%d' |
+          sort -r |
+          while IFS='|' read -r HASH DATE MSG AUTHOR; do
+            SHORT_HASH=${HASH:0:7}
+            echo "$DATE|$MSG|$SHORT_HASH|$HASH|$AUTHOR"
+          done | sort -r | awk -F'|' '
+          {
+            if ($1 != last_date) {
+              if (last_date != "") print "\n---\n"
+              print "\n### " $1
+              last_date = $1
+            }
+            print "- `" $2 "` ([`" $3 "`](https://github.com/${{ github.repository }}/commit/" $4 ")) by **" $5 "**"
+          }' >> CHANGELOG.md
 
-      - name: Commit and push CHANGELOG.md
+      - name: Commit and push changelog
         run: |
           git add CHANGELOG.md
-          git commit -m "docs(changelog): full changelog initialized"
+          git commit -m "docs(changelog): initialize full changelog"
           git push
