@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional npm cache directory
+.npm/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Output directories
+dist/
+build/
+.cache/
+
+# System files
+*.swp
+*.swo
