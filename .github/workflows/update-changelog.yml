@@ -1,18 +1,16 @@
-name: Update Changelog
+name: Generate Full Changelog
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  update-changelog:
+  full-changelog:
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Git
@@ -20,51 +18,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Extract last changelog commit hash
-        id: last_logged
+      - name: Get full commit log
         run: |
-          if [[ -f CHANGELOG.md ]]; then
-            LAST_HASH=$(grep -oP '(?<=\(\`\)[a-f0-9]{7})[a-f0-9]{7,}' CHANGELOG.md | head -n 1)
-          else
-            LAST_HASH=""
-          fi
-          echo "hash=$LAST_HASH" >> $GITHUB_OUTPUT
+          git log --pretty=format:"%H|%ad|%s|%an" --date=format:'%Y-%m-%d' > full_commit_log.txt
 
-      - name: Get commits since last changelog entry
-        id: commit_list
-        run: |
-          HASH="${{ steps.last_logged.outputs.hash }}"
-          if [[ -z "$HASH" ]]; then
-            GIT_LOG_RANGE=""
-          else
-            GIT_LOG_RANGE="$HASH..HEAD"
-          fi
-
-          git log $GIT_LOG_RANGE --pretty=format:"%H|%ad|%s|%an" --date=format:'%Y-%m-%d' > commit_log.txt
-
-          echo "found_commits=$(wc -l < commit_log.txt)" >> $GITHUB_OUTPUT
-
-      - name: Append new commits to CHANGELOG.md
-        if: steps.commit_list.outputs.found_commits != '0'
+      - name: Generate CHANGELOG.md
         run: |
           declare -A DATES=()
           while IFS='|' read -r HASH DATE MSG AUTHOR; do
             SHORT_HASH=${HASH:0:7}
             ENTRY="- \`${MSG}\` ([\`${SHORT_HASH}\`](https://github.com/${{ github.repository }}/commit/${HASH})) by **${AUTHOR}**"
             DATES["$DATE"]+="${ENTRY}\n"
-          done < commit_log.txt
+          done < full_commit_log.txt
 
-          for DATE in "${!DATES[@]}"; do
-            if grep -q "### $DATE" CHANGELOG.md 2>/dev/null; then
-              sed -i "/### $DATE/a ${DATES[$DATE]}" CHANGELOG.md
-            else
-              echo -e "\n---\n\n### $DATE\n${DATES[$DATE]}" >> CHANGELOG.md
-            fi
+          echo "# 📝 Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "This changelog is automatically generated." >> CHANGELOG.md
+
+          for DATE in $(printf "%s\n" "${!DATES[@]}" | sort -r); do
+            echo -e "\n---\n\n### ${DATE}" >> CHANGELOG.md
+            echo -e "${DATES[$DATE]}" >> CHANGELOG.md
           done
 
-      - name: Commit and push changelog
-        if: steps.commit_list.outputs.found_commits != '0'
+      - name: Commit and push CHANGELOG.md
         run: |
           git add CHANGELOG.md
-          git commit -m "docs(changelog): update with new commits"
+          git commit -m "docs(changelog): full changelog initialized"
           git push
