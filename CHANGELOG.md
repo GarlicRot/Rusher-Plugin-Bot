@@ -1,5 +1,3 @@
-# Changelog
+# 📝 Changelog
 
-All notable changes to **Rusher Plugin Bot** are documented here.
-
----
+This changelog is automatically generated.
