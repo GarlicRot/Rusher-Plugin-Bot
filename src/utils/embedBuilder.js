@@ -85,7 +85,7 @@ function createPluginEmbed(
 
   if (combinedInfo.trim().length > 0) {
     fields.push({
-      name: "- Plugin Info:",
+      name: isPlugin ? "- Plugin Info:" : "- Theme Info:",
       value: combinedInfo.trim(),
       inline: true,
     });

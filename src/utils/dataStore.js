@@ -23,24 +23,37 @@ async function loadPluginData() {
   try {
     const res = await fetch(RAW_YML_URL);
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-
     const text = await res.text();
     const parsed = yaml.load(text);
-
     plugins = parsed.plugins || [];
     themes = parsed.themes || [];
-
+    for (const plugin of plugins) {
+      if (typeof plugin.mc_versions !== "string") {
+        console.warn(
+          `Invalid mc_versions for plugin ${plugin.name}:`,
+          plugin.mc_versions
+        );
+        plugin.mc_versions = String(plugin.mc_versions || ""); // Coerce to string
+      }
+    }
+    for (const theme of themes) {
+      if (typeof theme.mc_versions !== "string") {
+        console.warn(
+          `Invalid mc_versions for theme ${theme.name}:`,
+          theme.mc_versions
+        );
+        theme.mc_versions = String(theme.mc_versions || ""); // Coerce to string
+      }
+    }
     fs.mkdirSync(path.dirname(BACKUP_PATH), { recursive: true });
     fs.writeFileSync(BACKUP_PATH, text);
     logger.success(
       `Loaded ${plugins.length} plugins and ${themes.length} themes`
     );
-    logger.info(`Saved YAML backup to ${BACKUP_PATH}`);
   } catch (err) {
     logger.error("Failed to fetch or parse plugin YAML from GitHub:");
     console.error(err);
-
-    // fallback to disk
+    // Fallback to disk
     try {
       const cached = fs.readFileSync(BACKUP_PATH, "utf8");
       const parsed = yaml.load(cached);
@@ -53,6 +66,30 @@ async function loadPluginData() {
     }
   }
 }
+
+function getPlugins() {
+  return plugins;
+}
+
+function getThemes() {
+  return themes;
+}
+
+function getPluginByName(name) {
+  return plugins.find((p) => p.name.toLowerCase() === name.toLowerCase());
+}
+
+function getThemeByName(name) {
+  return themes.find((t) => t.name.toLowerCase() === name.toLowerCase());
+}
+
+module.exports = {
+  loadPluginData,
+  getPlugins,
+  getThemes,
+  getPluginByName,
+  getThemeByName,
+};
 
 function getPlugins() {
   return plugins;

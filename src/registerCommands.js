@@ -5,9 +5,9 @@ const path = require("path");
 const logger = require("./utils/logger");
 
 // Validate required ENV
-const { CLIENT_ID, GUILD_ID, DISCORD_TOKEN } = process.env;
-if (!CLIENT_ID || !GUILD_ID || !DISCORD_TOKEN) {
-  logger.error("Missing CLIENT_ID, GUILD_ID, or DISCORD_TOKEN in .env");
+const { CLIENT_ID, DISCORD_TOKEN } = process.env;
+if (!CLIENT_ID || !DISCORD_TOKEN) {
+  logger.error("Missing CLIENT_ID or DISCORD_TOKEN in .env");
   process.exit(1);
 }
 
@@ -38,14 +38,23 @@ const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
 
 (async () => {
   try {
-    logger.info("Registering slash commands...");
+    logger.info("Clearing existing global commands...");
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
+    logger.info("Cleared global commands.");
 
-    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+    // Optionally clear guild-specific commands for any test guilds
+    // Replace GUILD_ID with your test guild ID if needed
+    // await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] });
+    // logger.info("Cleared guild-specific commands.");
+
+    logger.info(`Registering ${commands.length} global slash commands...`);
+    await rest.put(Routes.applicationCommands(CLIENT_ID), {
       body: commands,
     });
 
-    logger.success("Slash commands registered successfully.");
+    logger.success("Global slash commands registered successfully.");
   } catch (error) {
     logger.error(`Failed to register commands: ${error}`);
+    process.exit(1);
   }
 })();

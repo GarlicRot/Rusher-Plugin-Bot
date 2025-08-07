@@ -17,38 +17,32 @@ if (!process.env.DISCORD_TOKEN) {
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
-
 client.commands = new Collection();
 
 // Load plugin/theme YAML data from GitHub first
 loadPluginData()
   .then(() => {
-    // Dynamically load all commands from subfolders
+    // Dynamically load all commands recursively
     const commandsPath = path.join(__dirname, "commands");
-
     if (fs.existsSync(commandsPath)) {
-      const commandDirs = fs
-        .readdirSync(commandsPath)
-        .filter((dir) =>
-          fs.statSync(path.join(commandsPath, dir)).isDirectory()
-        );
-
-      for (const dir of commandDirs) {
-        const dirPath = path.join(commandsPath, dir);
-        const commandFiles = fs
-          .readdirSync(dirPath)
-          .filter((file) => file.endsWith(".js"));
-
-        for (const file of commandFiles) {
-          const command = require(path.join(dirPath, file));
-          if (command?.data && typeof command.execute === "function") {
-            client.commands.set(command.data.name, command);
-            logger.info(`Loaded command: ${command.data.name}`);
-          } else {
-            logger.warn(`Skipping invalid command in ${dir}/${file}`);
+      function loadCommands(dir) {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            loadCommands(fullPath);
+          } else if (entry.isFile() && fullPath.endsWith(".js")) {
+            const command = require(fullPath);
+            if (command?.data && typeof command.execute === "function") {
+              client.commands.set(command.data.name, command);
+              logger.info(`Loaded command: ${command.data.name}`);
+            } else {
+              logger.warn(`Skipping invalid command: ${fullPath}`);
+            }
           }
         }
       }
+      loadCommands(commandsPath);
     }
 
     // Dynamically load all events
@@ -57,7 +51,6 @@ loadPluginData()
       const eventFiles = fs
         .readdirSync(eventsPath)
         .filter((file) => file.endsWith(".js"));
-
       for (const file of eventFiles) {
         const event = require(path.join(eventsPath, file));
         if (event?.name && typeof event.execute === "function") {
