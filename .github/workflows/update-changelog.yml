@@ -1,12 +1,10 @@
-name: Update Changelog
+name: One-Time Commit to Changelog
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  update-changelog:
+  one-time-changelog:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,54 +18,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Get latest commit info
-        id: last_commit
+      - name: Append specific commit to CHANGELOG.md
         run: |
-          COMMIT_HASH=$(git log -1 --pretty=format:'%H')
-          COMMIT_DATE=$(git log -1 --pretty=format:'%ad' --date=format:'%Y-%m-%d')
-          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-          COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
-
-          echo "hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
-          echo "date=$COMMIT_DATE" >> $GITHUB_OUTPUT
-          echo "msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
-          echo "author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
-
-      - name: Check if commit only modified markdown/docs files
-        id: check_files
-        run: |
-          MODIFIED_FILES=$(git diff-tree --no-commit-id --name-only -r ${{ steps.last_commit.outputs.hash }})
-
-          NON_DOC_CHANGED=false
-          for file in $MODIFIED_FILES; do
-            if [[ ! "$file" =~ \.md$ && ! "$file" =~ ^docs/ ]]; then
-              NON_DOC_CHANGED=true
-              break
-            fi
-          done
-
-          echo "non_doc_changed=$NON_DOC_CHANGED" >> $GITHUB_OUTPUT
-
-      - name: Append commit to CHANGELOG.md
-        if: steps.check_files.outputs.non_doc_changed == 'true'
-        run: |
-          HASH="${{ steps.last_commit.outputs.hash }}"
-          DATE="${{ steps.last_commit.outputs.date }}"
-          MSG="${{ steps.last_commit.outputs.msg }}"
-          AUTHOR="${{ steps.last_commit.outputs.author }}"
+          HASH="9184bdfd361c346467f0acb6060a3eedb984492f"
           SHORT_HASH=$(echo "$HASH" | cut -c1-7)
+          DATE=$(git show -s --format=%ad --date=format:'%Y-%m-%d' $HASH)
+          MSG=$(git show -s --format=%s $HASH)
+          AUTHOR=$(git show -s --format=%an $HASH)
 
-          ENTRY="- \`${MSG}\` ([\`${SHORT_HASH}\`](https://github.com/${{ github.repository }}/commit/${HASH})) by **${AUTHOR}**"
-
-          if grep -q "### ${DATE}" CHANGELOG.md; then
-            sed -i "/### ${DATE}/a ${ENTRY}" CHANGELOG.md
-          else
-            echo -e "\n---\n\n### ${DATE}\n${ENTRY}" >> CHANGELOG.md
-          fi
+          echo "# 📝 Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "Automatically generated changelog." >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "---" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### $DATE" >> CHANGELOG.md
+          echo "- \`$MSG\` ([\`$SHORT_HASH\`](https://github.com/${{ github.repository }}/commit/$HASH)) by **$AUTHOR**" >> CHANGELOG.md
 
       - name: Commit and push changelog
-        if: steps.check_files.outputs.non_doc_changed == 'true'
         run: |
           git add CHANGELOG.md
-          git commit -m "docs(changelog): update for latest commit"
+          git commit -m "docs(changelog): initial entry for 9184bdf"
           git push
