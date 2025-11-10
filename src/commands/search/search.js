@@ -1,4 +1,3 @@
-// src/commands/search/search.js
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const {
   getPlugins,
@@ -8,6 +7,8 @@ const {
 } = require("../../utils/dataStore");
 const { createPluginEmbed } = require("../../utils/embedBuilder");
 const { getRepoDetails } = require("../../utils/getRepoDetails");
+
+const PER_PAGE = 5;
 
 /* ---------- version helpers ---------- */
 function versionCompare(v1, v2) {
@@ -75,6 +76,8 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("search")
     .setDescription("Search Rusher plugins/themes")
+
+    // Single-card: plugin
     .addSubcommand((sub) =>
       sub.setName("plugin")
         .setDescription("Show details about a plugin")
@@ -85,6 +88,8 @@ module.exports = {
           o.setName("mc_version").setDescription("Filter by MC version (e.g., 1.21.4)")
         )
     )
+
+    // Single-card: theme
     .addSubcommand((sub) =>
       sub.setName("theme")
         .setDescription("Show details about a theme")
@@ -95,6 +100,8 @@ module.exports = {
           o.setName("mc_version").setDescription("Filter by MC version (e.g., 1.21.4)")
         )
     )
+
+    // List: by creator (paged)
     .addSubcommand((sub) =>
       sub.setName("creator")
         .setDescription("List plugins & themes by creator (paged)")
@@ -104,11 +111,20 @@ module.exports = {
         .addIntegerOption((o) =>
           o.setName("page").setDescription("Page number (default 1)").setMinValue(1)
         )
-        .addIntegerOption((o) =>
-          o.setName("per_page").setDescription("Items per page (default 5, max 10)").setMinValue(1).setMaxValue(10)
-        )
         .addStringOption((o) =>
           o.setName("mc_version").setDescription("Filter by MC version (e.g., 1.21.4)")
+        )
+    )
+
+    // NEW: List by version (paged)
+    .addSubcommand((sub) =>
+      sub.setName("version")
+        .setDescription("List plugins & themes that support a specific MC version (paged)")
+        .addStringOption((o) =>
+          o.setName("mc_version").setDescription("Minecraft version, e.g., 1.21.4").setRequired(true)
+        )
+        .addIntegerOption((o) =>
+          o.setName("page").setDescription("Page number (default 1)").setMinValue(1)
         )
     ),
 
@@ -137,9 +153,8 @@ module.exports = {
         const list = [...creators].filter((n) => n.toLowerCase().includes(focused)).slice(0, 25);
         return interaction.respond(list.map((n) => ({ name: n, value: n })));
       }
-    } catch {
-      /* ignore autocomplete errors */
-    }
+      // no autocomplete for version (free text)
+    } catch { /* ignore */ }
   },
 
   /* ---------- execute ---------- */
@@ -226,7 +241,6 @@ module.exports = {
     if (sub === "creator") {
       const creator = interaction.options.getString("name", true);
       const page = interaction.options.getInteger("page") || 1;
-      const perPage = interaction.options.getInteger("per_page") || 5;
       const mc = interaction.options.getString("mc_version") || "";
 
       const byCreator = (it) => (it?.creator?.name || "").toLowerCase() === creator.toLowerCase();
@@ -242,7 +256,7 @@ module.exports = {
         });
       }
 
-      const { slice, p, pageCount, total } = paginate(items, page, perPage);
+      const { slice, p, pageCount, total } = paginate(items, page, PER_PAGE);
       const blocks = toBlocks(slice, (it) => {
         const title = `**[${it.name}](${it.repo ? `https://github.com/${it.repo}` : "#"})** — ${it.is_core ? "Core" : "Plugin"}`;
         const desc = truncate(it.description, 180);
@@ -260,6 +274,38 @@ module.exports = {
         embeds: [e],
         allowedMentions: { parse: [] },
       });
+    }
+
+    if (sub === "version") {
+      const mc = interaction.options.getString("mc_version", true);
+      const page = interaction.options.getInteger("page") || 1;
+
+      const items = [
+        ...filterAndSort(getPlugins, /*q*/"", mc),
+        ...filterAndSort(getThemes, /*q*/"", mc),
+      ];
+
+      if (!items.length) {
+        return interaction.reply({
+          content: `No items found for MC \`${mc}\`.`,
+          allowedMentions: { parse: [] },
+        });
+      }
+
+      const { slice, p, pageCount, total } = paginate(items, page, PER_PAGE);
+      const blocks = toBlocks(slice, (it) => {
+        const title = `**[${it.name}](${it.repo ? `https://github.com/${it.repo}` : "#"})** — ${it.is_core ? "Core" : "Plugin"}`;
+        const desc = truncate(it.description, 180);
+        return [title, desc, it.latest_release_tag ? `Latest: \`${it.latest_release_tag}\`` : null, it.mc_versions ? `MC: \`${it.mc_versions}\`` : null]
+          .filter(Boolean).join("\n");
+      });
+
+      const e = new EmbedBuilder()
+        .setTitle(`Items supporting MC ${mc}`)
+        .setDescription(blocks)
+        .setFooter({ text: `Page ${p}/${pageCount} • ${total} total` });
+
+      return interaction.reply({ embeds: [e], allowedMentions: { parse: [] } });
     }
   },
 };
