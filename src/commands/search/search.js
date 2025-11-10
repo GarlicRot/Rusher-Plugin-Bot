@@ -10,7 +10,7 @@ const { getRepoDetails } = require("../../utils/getRepoDetails");
 
 const PER_PAGE = 5;
 
-/* ---------- version helpers ---------- */
+/* version helpers */
 function versionCompare(v1, v2) {
   if (!v1 || !v2) return 0;
   const a = v1.split(".").map((n) => parseInt(n, 10) || 0);
@@ -37,12 +37,12 @@ function isVersionSupported(item, query) {
   return false;
 }
 
-/* ---------- small utils ---------- */
+/* small utils */
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 const truncate = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + "…" : s || "—");
 const toBlocks = (items, fmt) => items.map(fmt).join("\n\n");
 
-/* ---------- search helpers ---------- */
+/* search helpers */
 function matchQuery(item, q) {
   if (!q) return true;
   const needle = String(q || "").toLowerCase();
@@ -71,7 +71,7 @@ function paginate(arr, page, perPage) {
   return { slice: arr.slice(start, start + perPage), p, pageCount, total };
 }
 
-/* ---------- command ---------- */
+/* command */
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("search")
@@ -79,7 +79,8 @@ module.exports = {
 
     // Single-card: plugin
     .addSubcommand((sub) =>
-      sub.setName("plugin")
+      sub
+        .setName("plugin")
         .setDescription("Show details about a plugin")
         .addStringOption((o) =>
           o.setName("name").setDescription("Exact plugin name").setRequired(true).setAutocomplete(true)
@@ -91,7 +92,8 @@ module.exports = {
 
     // Single-card: theme
     .addSubcommand((sub) =>
-      sub.setName("theme")
+      sub
+        .setName("theme")
         .setDescription("Show details about a theme")
         .addStringOption((o) =>
           o.setName("name").setDescription("Exact theme name").setRequired(true).setAutocomplete(true)
@@ -103,7 +105,8 @@ module.exports = {
 
     // List: by creator (paged)
     .addSubcommand((sub) =>
-      sub.setName("creator")
+      sub
+        .setName("creator")
         .setDescription("List plugins & themes by creator (paged)")
         .addStringOption((o) =>
           o.setName("name").setDescription("Creator name").setRequired(true).setAutocomplete(true)
@@ -116,9 +119,10 @@ module.exports = {
         )
     )
 
-    // NEW: List by version (paged)
+    // List: by version (paged)
     .addSubcommand((sub) =>
-      sub.setName("version")
+      sub
+        .setName("version")
         .setDescription("List plugins & themes that support a specific MC version (paged)")
         .addStringOption((o) =>
           o.setName("mc_version").setDescription("Minecraft version, e.g., 1.21.4").setRequired(true)
@@ -128,7 +132,7 @@ module.exports = {
         )
     ),
 
-  /* ---------- autocomplete ---------- */
+  /* autocomplete */
   async autocomplete(interaction) {
     try {
       const sub = interaction.options.getSubcommand();
@@ -153,11 +157,10 @@ module.exports = {
         const list = [...creators].filter((n) => n.toLowerCase().includes(focused)).slice(0, 25);
         return interaction.respond(list.map((n) => ({ name: n, value: n })));
       }
-      // no autocomplete for version (free text)
-    } catch { /* ignore */ }
+    } catch {}
   },
 
-  /* ---------- execute ---------- */
+  /* execute */
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
 
@@ -175,7 +178,10 @@ module.exports = {
 
       const stats = item.repo ? await getRepoDetails(item.repo) : null;
 
-      let embed = createPluginEmbed ? await createPluginEmbed(item, stats, true, interaction.client) : null;
+      let embed = createPluginEmbed
+        ? await createPluginEmbed(item, interaction.user, true, stats, interaction.client)
+        : null;
+
       if (!embed) {
         embed = new EmbedBuilder()
           .setTitle(item.name || "Untitled")
@@ -281,8 +287,8 @@ module.exports = {
       const page = interaction.options.getInteger("page") || 1;
 
       const items = [
-        ...filterAndSort(getPlugins, /*q*/"", mc),
-        ...filterAndSort(getThemes, /*q*/"", mc),
+        ...filterAndSort(getPlugins, /* q */ "", mc),
+        ...filterAndSort(getThemes, /* q */ "", mc),
       ];
 
       if (!items.length) {
