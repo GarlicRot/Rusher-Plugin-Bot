@@ -1,3 +1,4 @@
+// src/commands/search/search.js
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const {
   getPlugins, getThemes, getPluginByName, getThemeByName,
@@ -41,10 +42,10 @@ function toBlocks(items, fmtFn) { return items.map(fmtFn).join("\n\n"); }
 function truncate(s, n) { return (s && s.length > n ? s.slice(0, n - 1) + "…" : (s || "—")); }
 
 // search helpers
-function normalize(s) { return String(s || "").toLowerCase(); }
+function normStr(s) { return String(s || "").toLowerCase(); }
 function matchQuery(item, q) {
   if (!q) return true;
-  const n = normalize(q);
+  const n = normStr(q);
   const creatorName = item && item.creator ? item.creator.name : "";
   const hay = [
     item ? item.name : "",
@@ -154,7 +155,7 @@ module.exports = {
       let embed = null;
       try {
         if (createPluginEmbed) embed = await createPluginEmbed(item, stats, true, interaction.client);
-      } catch (e) { /* fallback below */ }
+      } catch (e) {}
       if (!embed) {
         embed = new EmbedBuilder()
           .setTitle(item.name || "Untitled")
