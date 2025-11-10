@@ -1,437 +1,246 @@
-const {
-  SlashCommandBuilder,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} = require("discord.js");
-const { createPluginEmbed } = require("../../utils/embedBuilder");
-const { getRepoDetails } = require("../../utils/getRepoDetails");
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const {
   getPlugins,
   getThemes,
   getPluginByName,
   getThemeByName,
 } = require("../../utils/dataStore");
-const axios = require("axios");
+const { createPluginEmbed } = require("../../utils/embedBuilder");
+const { getRepoDetails } = require("../../utils/getRepoDetails");
 
+/* version helpers */
 function versionCompare(v1, v2) {
   if (!v1 || !v2) return 0;
-  const parts1 = v1.split(".").map(Number);
-  const parts2 = v2.split(".").map(Number);
-  const maxLen = Math.max(parts1.length, parts2.length);
-  for (let i = 0; i < maxLen; i++) {
-    const p1 = parts1[i] || 0;
-    const p2 = parts2[i] || 0;
-    if (p1 > p2) return 1;
-    if (p1 < p2) return -1;
+  const a = v1.split(".").map((n) => parseInt(n, 10) || 0);
+  const b = v2.split(".").map((n) => parseInt(n, 10) || 0);
+  const m = Math.max(a.length, b.length);
+  for (let i = 0; i < m; i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x > y) return 1;
+    if (x < y) return -1;
   }
   return 0;
 }
-
 function isVersionSupported(item, query) {
+  if (!query) return true;
   if (!item.mc_versions) return false;
   const ranges = item.mc_versions.split(",").map((r) => r.trim());
   for (const range of ranges) {
+    if (!range) continue;
     if (range.includes("-")) {
       const [start, end] = range.split("-").map((v) => v.trim());
-      if (
-        versionCompare(query, start) >= 0 &&
-        versionCompare(query, end) <= 0
-      ) {
-        return true;
-      }
-    } else {
-      if (versionCompare(query, range) === 0) {
-        return true;
-      }
-    }
+      if (versionCompare(query, start) >= 0 && versionCompare(query, end) <= 0) return true;
+    } else if (versionCompare(query, range) === 0) return true;
   }
   return false;
 }
 
-function expandVersionRange(start, end) {
-  const versions = [];
-  const startParts = start.split(".").map(Number);
-  const endParts = end.split(".").map(Number);
-  let [major, minor, patch = 0] = startParts;
-  const [endMajor, endMinor, endPatch = 0] = endParts;
-  while (
-    major < endMajor ||
-    (major === endMajor && minor < endMinor) ||
-    (major === endMajor && minor === endMinor && patch <= endPatch)
-  ) {
-    versions.push(`${major}.${minor}${patch ? `.${patch}` : ""}`);
-    patch++;
-    if (patch > 9) {
-      patch = 0;
-      minor++;
-    }
-    if (minor > 9) {
-      minor = 0;
-      major++;
-    }
-  }
-  return versions;
+/* small utils */
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+const toBlocks = (items, fmtFn) => items.map(fmtFn).join("\n\n");
+const truncate = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + "…" : s || "—");
+
+/* search helpers */
+const normalize = (s) => String(s || "").toLowerCase();
+function matchQuery(item, q) {
+  if (!q) return true;
+  const n = normalize(q);
+  const hay = [
+    item.name, item.description, item?.creator?.name, item.repo, item.mc_versions,
+  ].filter(Boolean).join(" ").toLowerCase();
+  return hay.includes(n);
+}
+function filterAndSort(pool, q, mc) {
+  return pool()
+    .filter((it) => matchQuery(it, q) && isVersionSupported(it, mc))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+}
+function paginate(arr, page, perPage) {
+  const total = arr.length;
+  const pageCount = Math.max(1, Math.ceil(total / perPage));
+  const p = clamp(page, 1, pageCount);
+  const start = (p - 1) * perPage;
+  return { slice: arr.slice(start, start + perPage), p, pageCount, total };
 }
 
-const knownVersions = [
-  "1.20.1",
-  "1.20.2",
-  "1.20.3",
-  "1.20.4",
-  "1.20.5",
-  "1.20.6",
-  "1.21",
-  "1.21.1",
-  "1.21.2",
-  "1.21.3",
-  "1.21.4",
-  "1.21.5",
-];
-
+/* command */
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("search")
-    .setDescription("Search for plugins or themes")
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName("plugin")
-        .setDescription("Get detailed info about a Rusher plugin")
-        .addStringOption((option) =>
-          option
-            .setName("name")
-            .setDescription("The plugin name")
-            .setRequired(true)
-            .setAutocomplete(true)
+    .setDescription("Search Rusher plugins/themes (public, single-message results)")
+    .addSubcommand((sub) =>
+      sub.setName("plugin")
+        .setDescription("Show details about a plugin")
+        .addStringOption((o) =>
+          o.setName("name").setDescription("Exact plugin name").setRequired(true).setAutocomplete(true)
+        )
+        .addStringOption((o) =>
+          o.setName("mc_version").setDescription("Filter by MC version (e.g., 1.21.4)").setRequired(false)
         )
     )
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName("theme")
-        .setDescription("Get information about a theme")
-        .addStringOption((option) =>
-          option
-            .setName("name")
-            .setDescription("The theme name")
-            .setRequired(true)
-            .setAutocomplete(true)
+    .addSubcommand((sub) =>
+      sub.setName("theme")
+        .setDescription("Show details about a theme")
+        .addStringOption((o) =>
+          o.setName("name").setDescription("Exact theme name").setRequired(true).setAutocomplete(true)
+        )
+        .addStringOption((o) =>
+          o.setName("mc_version").setDescription("Filter by MC version (e.g., 1.21.4)").setRequired(false)
         )
     )
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName("creator")
-        .setDescription("List plugins and themes by a creator")
-        .addStringOption((option) =>
-          option
-            .setName("name")
-            .setDescription("The creator name")
-            .setRequired(true)
-            .setAutocomplete(true)
+    .addSubcommand((sub) =>
+      sub.setName("creator")
+        .setDescription("List plugins & themes by creator (paged)")
+        .addStringOption((o) =>
+          o.setName("name").setDescription("Creator name").setRequired(true).setAutocomplete(true)
         )
-    )
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName("version")
-        .setDescription(
-          "List plugins and themes compatible with a Minecraft version"
+        .addIntegerOption((o) =>
+          o.setName("page").setDescription("Page number (default 1)").setMinValue(1).setRequired(false)
         )
-        .addStringOption((option) =>
-          option
-            .setName("version")
-            .setDescription("The Minecraft version")
-            .setRequired(true)
-            .setAutocomplete(true)
+        .addIntegerOption((o) =>
+          o.setName("per_page").setDescription("Items per page (default 5, max 10)").setMinValue(1).setMaxValue(10).setRequired(false)
+        )
+        .addStringOption((o) =>
+          o.setName("mc_version").setDescription("Filter by MC version (e.g., 1.21.4)").setRequired(false)
         )
     ),
 
   async autocomplete(interaction) {
-    const focused = interaction.options.getFocused();
-    const subcommand = interaction.options.getSubcommand();
-    if (subcommand === "plugin") {
-      const plugins = getPlugins();
-      const filtered = plugins
-        .filter((p) => p.name.toLowerCase().includes(focused.toLowerCase()))
-        .slice(0, 25)
-        .map((p) => ({ name: p.name, value: p.name }));
-      await interaction.respond(filtered);
-    } else if (subcommand === "theme") {
-      const themes = getThemes();
-      const filtered = themes
-        .filter((theme) =>
-          theme.name.toLowerCase().includes(focused.toLowerCase())
-        )
-        .slice(0, 25)
-        .map((theme) => ({ name: theme.name, value: theme.name }));
-      await interaction.respond(filtered);
-    } else if (subcommand === "creator") {
-      const allItems = [...getPlugins(), ...getThemes()];
-      const creators = [
-        ...new Set(allItems.map((item) => item.creator?.name || "Unknown")),
-      ];
-      const filtered = creators
-        .filter((c) => c.toLowerCase().includes(focused.toLowerCase()))
-        .slice(0, 25)
-        .map((c) => ({ name: c, value: c }));
-      await interaction.respond(filtered);
-    } else if (subcommand === "version") {
-      const allItems = [...getPlugins(), ...getThemes()];
-      const allVersions = new Set();
-      // Add all versions from ranges and single versions
-      allItems.forEach((item) => {
-        if (item.mc_versions) {
-          item.mc_versions.split(",").forEach((range) => {
-            if (range.includes("-")) {
-              const [start, end] = range.split("-").map((v) => v.trim());
-              const versionsInRange = expandVersionRange(start, end);
-              versionsInRange.forEach((ver) => allVersions.add(ver));
-            } else {
-              allVersions.add(range.trim());
-            }
-          });
-        }
-      });
-      // Filter versions based on user input
-      let filtered = Array.from(allVersions)
-        .filter((v) => v.toLowerCase().includes(focused.toLowerCase()))
-        .sort((a, b) => versionCompare(b, a)) // Sort descending for latest first
-        .slice(0, 25)
-        .map((v) => ({ name: v, value: v }));
-      // Fallback: If no matches, show recent versions from knownVersions
-      if (filtered.length === 0) {
-        filtered = knownVersions
-          .filter((v) => v.toLowerCase().includes(focused.toLowerCase()))
-          .sort((a, b) => versionCompare(b, a))
-          .slice(0, 25)
-          .map((v) => ({ name: v, value: v }));
+    try {
+      const sub = interaction.options.getSubcommand();
+      const focus = interaction.options.getFocused(true);
+      const val = (focus?.value || "").toLowerCase();
+
+      if (sub === "plugin") {
+        const names = getPlugins()().map((p) => p.name).filter(Boolean);
+        return interaction.respond(
+          names.filter((n) => n.toLowerCase().includes(val)).slice(0, 25).map((c) => ({ name: c, value: c }))
+        );
       }
-      await interaction.respond(filtered);
-    }
+      if (sub === "theme") {
+        const names = getThemes()().map((t) => t.name).filter(Boolean);
+        return interaction.respond(
+          names.filter((n) => n.toLowerCase().includes(val)).slice(0, 25).map((c) => ({ name: c, value: c }))
+        );
+      }
+      if (sub === "creator") {
+        const creators = new Set();
+        for (const p of getPlugins()()) if (p?.creator?.name) creators.add(p.creator.name);
+        for (const t of getThemes()()) if (t?.creator?.name) creators.add(t.creator.name);
+        const list = [...creators].filter((n) => n.toLowerCase().includes(val)).slice(0, 25);
+        return interaction.respond(list.map((c) => ({ name: c, value: c })));
+      }
+    } catch {}
   },
 
   async execute(interaction) {
-    const subcommand = interaction.options.getSubcommand();
-    const name = interaction.options.getString("name");
-    if (subcommand === "plugin") {
-      const plugin = getPluginByName(name);
-      if (!plugin) {
-        return interaction.reply({
-          content: "❌ Plugin not found.",
-          ephemeral: true,
-        });
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === "plugin") {
+      const name = interaction.options.getString("name", true);
+      const mc = interaction.options.getString("mc_version") || "";
+      const item = getPluginByName(name);
+      if (!item) return interaction.reply({ content: `❌ Plugin **${name}** not found.`, allowedMentions: { parse: [] } });
+      if (!isVersionSupported(item, mc)) {
+        return interaction.reply({ content: `❌ **${name}** does not list support for MC \`${mc}\`.`, allowedMentions: { parse: [] } });
       }
-      const githubInfo = await getRepoDetails(plugin.repo);
-      const embed = createPluginEmbed(
-        plugin,
-        interaction.user,
-        true,
-        githubInfo,
-        interaction.client
-      );
-      await interaction.reply({ embeds: [embed] });
-    } else if (subcommand === "theme") {
-      const theme = getThemeByName(name);
-      if (!theme) {
-        return interaction.reply({
-          content: "❌ Theme not found.",
-          ephemeral: true,
-        });
-      }
-      const githubInfo = await getRepoDetails(theme.repo);
-      const embed = createPluginEmbed(
-        theme,
-        interaction.user,
-        false,
-        githubInfo,
-        interaction.client
-      );
-      await interaction.reply({ embeds: [embed] });
-    } else if (subcommand === "creator") {
-      const creatorName = name; // cache to avoid capture confusion
-      const allItems = [...getPlugins(), ...getThemes()];
-      const itemsByCreator = allItems.filter(
-        (item) =>
-          item.creator?.name?.toLowerCase() === creatorName.toLowerCase()
-      );
-      if (itemsByCreator.length === 0) {
-        return interaction.reply({
-          content: "❌ No plugins or themes found for creator: " + creatorName,
-          ephemeral: true,
-        });
-      }
-      const creatorUrl =
-        itemsByCreator[0].creator?.url || `https://github.com/${creatorName}`;
-      let avatarUrl = null;
-      try {
-        const response = await axios.get(
-          `https://api.github.com/users/${creatorName}`,
-          {
-            headers: { Authorization: `token ${process.env.GITHUB_TOKEN}` },
+
+      const stats = item.repo ? await getRepoDetails(item.repo) : null;
+
+      // Try your shared embed builder; if it returns null, build a minimal one with stats.
+      let embed = createPluginEmbed ? await createPluginEmbed(item, stats, true, interaction.client) : null;
+      if (!embed) {
+        embed = new EmbedBuilder()
+          .setTitle(item.name || "Untitled")
+          .setURL(item.repo ? `https://github.com/${item.repo}` : null)
+          .setDescription(truncate(item.description, 400));
+        if (stats) {
+          const parts = [];
+          if (typeof stats.stars === "number") parts.push(`**Stars:** ${stats.stars}`);
+          if (typeof stats.downloadCount === "number") parts.push(`**Downloads:** ${stats.downloadCount}`);
+          if (stats.lastCommit) {
+            const d = new Date(stats.lastCommit).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+            parts.push(`**Last Commit:** ${d}`);
           }
-        );
-        avatarUrl = response.data.avatar_url;
-      } catch (error) {
-        console.warn(
-          `Failed to fetch avatar for ${creatorName}:`,
-          error.message
-        );
+          if (parts.length) embed.addFields({ name: "GitHub", value: parts.join("\n"), inline: true });
+        }
+        if (item.mc_versions || item.latest_release_tag) {
+          const lines = [];
+          if (item.mc_versions) lines.push(`**MC Versions:** ${item.mc_versions}`);
+          if (item.latest_release_tag) lines.push(`**Latest Release:** \`${item.latest_release_tag}\``);
+          embed.addFields({ name: "Plugin Info", value: lines.join("\n"), inline: true });
+        }
       }
-      const perPage = 5;
-      let page = 0;
-      const totalPages = Math.ceil(itemsByCreator.length / perPage);
-      const generateEmbed = async (page) => {
-        const embed = new EmbedBuilder()
-          .setTitle(
-            `Items by Creator: ${creatorName} (${itemsByCreator.length} found)`
-          )
-          .setDescription(`[View GitHub Profile](${creatorUrl})`)
-          .setColor(0x00ff88)
-          .setFooter({
-            text: `Page ${page + 1}/${totalPages}`,
-            iconURL: interaction.client.user.displayAvatarURL(),
-          });
-        if (avatarUrl) {
-          embed.setThumbnail(avatarUrl);
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    if (sub === "theme") {
+      const name = interaction.options.getString("name", true);
+      const mc = interaction.options.getString("mc_version") || "";
+      const item = getThemeByName(name);
+      if (!item) return interaction.reply({ content: `❌ Theme **${name}** not found.`, allowedMentions: { parse: [] } });
+      if (!isVersionSupported(item, mc)) {
+        return interaction.reply({ content: `❌ **${name}** does not list support for MC \`${mc}\`.`, allowedMentions: { parse: [] } });
+      }
+
+      const stats = item.repo ? await getRepoDetails(item.repo) : null;
+
+      let e = new EmbedBuilder()
+        .setTitle(item.name || "Untitled")
+        .setURL(item.repo ? `https://github.com/${item.repo}` : null)
+        .setDescription(truncate(item.description, 400));
+      if (item.creator?.name) e.setAuthor({ name: item.creator.name, url: item.creator.url || null, iconURL: item.creator.avatar || null });
+      if (item.latest_release_tag) e.addFields({ name: "Latest", value: `${item.latest_release_tag}`, inline: true });
+      if (item.mc_versions) e.addFields({ name: "MC", value: item.mc_versions, inline: true });
+      if (stats) {
+        const parts = [];
+        if (typeof stats.stars === "number") parts.push(`**Stars:** ${stats.stars}`);
+        if (typeof stats.downloadCount === "number") parts.push(`**Downloads:** ${stats.downloadCount}`);
+        if (stats.lastCommit) {
+          const d = new Date(stats.lastCommit).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+          parts.push(`**Last Commit:** ${d}`);
         }
-        const start = page * perPage;
-        for (const item of itemsByCreator.slice(start, start + perPage)) {
-          const isPlugin = getPlugins().includes(item);
-          const coreLabel = isPlugin && item.is_core ? " (Core)" : "";
-          const repoUrl = `https://github.com/${item.repo}`;
-          const shortDesc =
-            item.description?.substring(0, 100) +
-              (item.description?.length > 100 ? "..." : "") || "No description";
-          embed.addFields({
-            name: "•",
-            value: `[${item.name}${coreLabel} – ${
-              isPlugin ? "Plugin" : "Theme"
-            }](${repoUrl})\n${shortDesc}`,
-            inline: false,
-          });
-        }
-        return embed;
-      };
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("prev")
-          .setLabel("◀️")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(page === 0),
-        new ButtonBuilder()
-          .setCustomId("next")
-          .setLabel("▶️")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(page === totalPages - 1)
-      );
-      await interaction.reply({
-        embeds: [await generateEmbed(page)],
-        components: totalPages > 1 ? [row] : [],
-      });
-      if (totalPages <= 1) return;
-      const collector = interaction.channel.createMessageComponentCollector({
-        filter: (i) =>
-          i.user.id === interaction.user.id &&
-          ["prev", "next"].includes(i.customId),
-        time: 300000,
-      });
-      collector.on("collect", async (i) => {
-        if (i.customId === "prev") page--;
-        if (i.customId === "next") page++;
-        await i.update({
-          embeds: [await generateEmbed(page)],
-          components: [
-            row.setComponents(
-              row.components[0].setDisabled(page === 0),
-              row.components[1].setDisabled(page === totalPages - 1)
-            ),
-          ],
-        });
-      });
-      collector.on("end", () =>
-        interaction.editReply({ components: [] }).catch(() => {})
-      );
-    } else if (subcommand === "version") {
-      const queryVersion = interaction.options.getString("version");
-      const allItems = [...getPlugins(), ...getThemes()];
-      const itemsForVersion = allItems.filter((item) =>
-        isVersionSupported(item, queryVersion)
-      );
-      if (itemsForVersion.length === 0) {
+        if (parts.length) e.addFields({ name: "GitHub", value: parts.join("\n"), inline: true });
+      }
+      return interaction.reply({ embeds: [e] });
+    }
+
+    if (sub === "creator") {
+      const creator = interaction.options.getString("name", true);
+      const page = interaction.options.getInteger("page") || 1;
+      const perPage = interaction.options.getInteger("per_page") || 5;
+      const mc = interaction.options.getString("mc_version") || "";
+
+      const byCreator = (it) => (it?.creator?.name || "").toLowerCase() === creator.toLowerCase();
+      const items = [
+        ...filterAndSort(getPlugins, creator, mc).filter(byCreator),
+        ...filterAndSort(getThemes, creator, mc).filter(byCreator),
+      ];
+      if (!items.length) {
         return interaction.reply({
-          content: `❌ No plugins or themes found for version: ${queryVersion}`,
-          ephemeral: true,
+          content: `No items found for creator **${creator}**${mc ? ` (MC \`${mc}\`)` : ""}.`,
+          allowedMentions: { parse: [] },
         });
       }
-      const perPage = 5;
-      let page = 0;
-      const totalPages = Math.ceil(itemsForVersion.length / perPage);
-      const generateEmbed = (page) => {
-        const embed = new EmbedBuilder()
-          .setTitle(
-            `Items for Minecraft Version: ${queryVersion} (${itemsForVersion.length} found)`
-          )
-          .setColor(0x00ff88)
-          .setFooter({
-            text: `Page ${page + 1}/${totalPages}`,
-            iconURL: interaction.client.user.displayAvatarURL(),
-          });
-        const start = page * perPage;
-        for (const item of itemsForVersion.slice(start, start + perPage)) {
-          const isPlugin = getPlugins().includes(item);
-          const coreLabel = isPlugin && item.is_core ? " (Core)" : "";
-          const repoUrl = `https://github.com/${item.repo}`;
-          const shortDesc =
-            item.description?.substring(0, 100) +
-              (item.description?.length > 100 ? "..." : "") || "No description";
-          embed.addFields({
-            name: "•",
-            value: `[${item.name}${coreLabel} – ${
-              isPlugin ? "Plugin" : "Theme"
-            }](${repoUrl})\n${shortDesc}`,
-            inline: false,
-          });
-        }
-        return embed;
-      };
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("prev")
-          .setLabel("◀️")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(page === 0),
-        new ButtonBuilder()
-          .setCustomId("next")
-          .setLabel("▶️")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(page === totalPages - 1)
-      );
-      await interaction.reply({
-        embeds: [generateEmbed(page)],
-        components: totalPages > 1 ? [row] : [],
+
+      const { slice, p, pageCount, total } = paginate(items, page, perPage);
+      const blocks = toBlocks(slice, (it) => {
+        const title = `**[${it.name}](${it.repo ? `https://github.com/${it.repo}` : "#"})** — ${it.is_core ? "Core" : "Plugin"}`;
+        const desc = truncate(it.description, 180);
+        return [title, desc, it.latest_release_tag ? `Latest: \`${it.latest_release_tag}\`` : null, it.mc_versions ? `MC: \`${it.mc_versions}\`` : null]
+          .filter(Boolean).join("\n");
       });
-      if (totalPages <= 1) return;
-      const collector = interaction.channel.createMessageComponentCollector({
-        filter: (i) =>
-          i.user.id === interaction.user.id &&
-          ["prev", "next"].includes(i.customId),
-        time: 300000,
+
+      const e = new EmbedBuilder()
+        .setTitle(`Items by Creator: ${creator}`)
+        .setDescription(blocks)
+        .setFooter({ text: `Page ${p}/${pageCount} • ${total} total${mc ? ` • MC ${mc}` : ""}` });
+
+      return interaction.reply({
+        content: `[View GitHub Profile](https://github.com/${encodeURIComponent(creator)})`,
+        embeds: [e],
+        allowedMentions: { parse: [] },
       });
-      collector.on("collect", async (i) => {
-        if (i.customId === "prev") page--;
-        if (i.customId === "next") page++;
-        await i.update({
-          embeds: [generateEmbed(page)],
-          components: [
-            row.setComponents(
-              row.components[0].setDisabled(page === 0),
-              row.components[1].setDisabled(page === totalPages - 1)
-            ),
-          ],
-        });
-      });
-      collector.on("end", () =>
-        interaction.editReply({ components: [] }).catch(() => {})
-      );
     }
   },
 };
