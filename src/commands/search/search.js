@@ -1,23 +1,18 @@
-// src/commands/search/search.js
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const {
-  getPlugins,
-  getThemes,
-  getPluginByName,
-  getThemeByName,
+  getPlugins, getThemes, getPluginByName, getThemeByName,
 } = require("../../utils/dataStore");
 const { createPluginEmbed } = require("../../utils/embedBuilder");
 const { getRepoDetails } = require("../../utils/getRepoDetails");
 
-/* version helpers */
+// version helpers
 function versionCompare(v1, v2) {
   if (!v1 || !v2) return 0;
   const a = v1.split(".").map((n) => parseInt(n, 10) || 0);
   const b = v2.split(".").map((n) => parseInt(n, 10) || 0);
   const m = Math.max(a.length, b.length);
   for (let i = 0; i < m; i++) {
-    const x = a[i] || 0;
-    const y = b[i] || 0;
+    const x = a[i] || 0; const y = b[i] || 0;
     if (x > y) return 1;
     if (x < y) return -1;
   }
@@ -35,19 +30,17 @@ function isVersionSupported(item, query) {
       const start = (parts[0] || "").trim();
       const end = (parts[1] || "").trim();
       if (versionCompare(query, start) >= 0 && versionCompare(query, end) <= 0) return true;
-    } else if (versionCompare(query, range) === 0) {
-      return true;
-    }
+    } else if (versionCompare(query, range) === 0) return true;
   }
   return false;
 }
 
-/* small utils */
+// small utils
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 function toBlocks(items, fmtFn) { return items.map(fmtFn).join("\n\n"); }
 function truncate(s, n) { return (s && s.length > n ? s.slice(0, n - 1) + "…" : (s || "—")); }
 
-/* search helpers */
+// search helpers
 function normalize(s) { return String(s || "").toLowerCase(); }
 function matchQuery(item, q) {
   if (!q) return true;
@@ -75,7 +68,6 @@ function paginate(arr, page, perPage) {
   return { slice: arr.slice(start, start + perPage), p: p, pageCount: pageCount, total: total };
 }
 
-/* command */
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("search")
@@ -142,9 +134,7 @@ module.exports = {
         const list = Array.from(creators).filter(function (n) { return n.toLowerCase().includes(val); }).slice(0, 25);
         return interaction.respond(list.map(function (c) { return { name: c, value: c }; }));
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) { /* ignore */ }
   },
 
   async execute(interaction) {
@@ -161,7 +151,10 @@ module.exports = {
 
       const stats = item.repo ? await getRepoDetails(item.repo) : null;
 
-      let embed = createPluginEmbed ? await createPluginEmbed(item, stats, true, interaction.client) : null;
+      let embed = null;
+      try {
+        if (createPluginEmbed) embed = await createPluginEmbed(item, stats, true, interaction.client);
+      } catch (e) { /* fallback below */ }
       if (!embed) {
         embed = new EmbedBuilder()
           .setTitle(item.name || "Untitled")
@@ -198,11 +191,13 @@ module.exports = {
 
       const stats = item.repo ? await getRepoDetails(item.repo) : null;
 
-      let e = new EmbedBuilder()
+      const e = new EmbedBuilder()
         .setTitle(item.name || "Untitled")
         .setURL(item.repo ? "https://github.com/" + item.repo : null)
         .setDescription(truncate(item.description, 400));
-      if (item && item.creator && item.creator.name) e.setAuthor({ name: item.creator.name, url: item.creator.url || null, iconURL: item.creator.avatar || null });
+      if (item && item.creator && item.creator.name) {
+        e.setAuthor({ name: item.creator.name, url: item.creator.url || null, iconURL: item.creator.avatar || null });
+      }
       if (item.latest_release_tag) e.addFields({ name: "Latest", value: String(item.latest_release_tag), inline: true });
       if (item.mc_versions) e.addFields({ name: "MC", value: item.mc_versions, inline: true });
       if (stats) {
