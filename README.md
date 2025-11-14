@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/Avatar.png" alt="Rusher Plugin Bot Avatar" width="200">
+</p>
+
 # Rusher-Plugin-Bot
 
 Rusher-Plugin-Bot is a Discord bot designed to explore and display information from the official RusherHacks Plugin and Theme registry. It provides fast, searchable access to plugin data directly inside Discord using slash commands and clean, structured embeds.
