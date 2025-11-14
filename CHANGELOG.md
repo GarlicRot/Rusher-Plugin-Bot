@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-14
 
+- docs(readme): fix last commit badge by excluding bot commits ([`c4d5721`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/c4d57214e2c30592cf85543ff10ff3205cd16d65)) by **GarlicRot**
+
+
+### 2025-11-14
+
+- docs(changelog): update changelog ([`708f90f`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/708f90f154df03c90b23f99ae1cace98dc449871)) by **github-actions[bot]**
+
+
+### 2025-11-14
+
 - Revert ([`84e5bc0`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/84e5bc058ca0c0fdb649839e6f7fc05fc87f1bd3)) by **GarlicRot**
 
 
