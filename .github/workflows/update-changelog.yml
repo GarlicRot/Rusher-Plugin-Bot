@@ -14,8 +14,6 @@ jobs:
     permissions:
       contents: write
 
-    if: github.actor != 'github-actions[bot]'
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,9 +36,7 @@ jobs:
           echo "---" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
 
-          # Log only human commits:
-          # - exclude github-actions[bot]
-          # - exclude changelog commits
+          # Newest → Oldest, and filter out bot + changelog commits
           git log \
             --date=format:'%Y-%m-%d' \
             --pretty=format:"### %ad%n%n- %s ([\`%h\`]($REPO_URL/commit/%H)) by **%an**%n%n" \
