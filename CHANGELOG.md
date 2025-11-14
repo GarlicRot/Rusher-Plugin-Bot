@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-14
 
+- docs: add CONTRIBUTING.md with simple contribution guidelines ([`31060e5`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/31060e5f35c3447343508a0297d0c2ce288ac573)) by **GarlicRot**
+
+
+### 2025-11-14
+
+- docs(changelog): update changelog ([`aad7408`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/aad7408bb020cc6372a86a349a9658e2c9af3d0c)) by **github-actions[bot]**
+
+
+### 2025-11-14
+
 - docs(readme): add changelog and contributing sections, update project overview ([`4083875`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/4083875a8046876360ae629dab352f2b2154c1cb)) by **GarlicRot**
 
 
