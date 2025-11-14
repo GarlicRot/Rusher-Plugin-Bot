@@ -38,3 +38,19 @@ A developer-only command allows the bot to refresh its cached dataset from the l
 - Data is processed, normalized, and cached for speed and reliability.
 - Slash commands feed this data into carefully formatted Discord embeds.
 - GitHub metadata (stars, last update time, etc.) is automatically included when available.
+
+## Changelog
+
+This project maintains an automatically generated changelog in [CHANGELOG.md](./CHANGELOG.md).  
+The changelog is built from the Git commit history by a GitHub Actions workflow and is ordered from newest to oldest changes.
+
+## Contributing
+
+Contributions, suggestions, and improvements are welcome.
+
+- Open an issue if you find a bug or want to request a feature.
+- Submit a pull request for bug fixes, enhancements, or documentation updates.
+- Keep changes focused and clearly described in the PR description.
+- For larger changes, consider opening an issue first to discuss the approach.
+
+A dedicated [CONTRIBUTING.md](./CONTRIBUTING.md) file will describe the full contribution process and coding guidelines.
