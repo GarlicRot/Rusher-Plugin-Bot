@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-14
 
+- docs: add status badges and Discord invite badge to README hero section ([`44751b5`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/44751b5d636cdf907295056bed36e4a1b0052ba1)) by **GarlicRot**
+
+
+### 2025-11-14
+
+- docs(changelog): update changelog ([`da38773`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/da38773ff7f44ccf437237f90f6e50ab04e888e6)) by **github-actions[bot]**
+
+
+### 2025-11-14
+
 - docs: add CONTRIBUTING.md with simple contribution guidelines ([`31060e5`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/31060e5f35c3447343508a0297d0c2ce288ac573)) by **GarlicRot**
 
 
