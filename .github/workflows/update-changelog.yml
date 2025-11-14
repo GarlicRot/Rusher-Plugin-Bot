@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     if: github.actor != 'github-actions[bot]'
 
     steps:
@@ -37,10 +38,14 @@ jobs:
           echo "---" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
 
-          # Newest → Oldest (default log order)
+          # Log only human commits:
+          # - exclude github-actions[bot]
+          # - exclude changelog commits
           git log \
             --date=format:'%Y-%m-%d' \
             --pretty=format:"### %ad%n%n- %s ([\`%h\`]($REPO_URL/commit/%H)) by **%an**%n%n" \
+            --invert-grep --author="github-actions[bot]" \
+            --invert-grep --grep="changelog" \
             >> CHANGELOG.md
 
       - name: Commit and push changelog
