@@ -13,21 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # Avoid infinite loops from bot commits
     if: github.actor != 'github-actions[bot]'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # need full history for complete changelog
+          fetch-depth: 0
 
       - name: Set up Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Generate CHANGELOG.md from git history
+      - name: Generate CHANGELOG.md
         run: |
           REPO_URL="https://github.com/${{ github.repository }}"
 
@@ -38,19 +37,19 @@ jobs:
           echo "---" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
 
-          # Oldest -> newest
-          git log --reverse \
+          # Newest → Oldest (default log order)
+          git log \
             --date=format:'%Y-%m-%d' \
-            --pretty=format:"### %ad%n- \`%s\` ([\`%h\`]($REPO_URL/commit/%H)) by **%an**%n" \
+            --pretty=format:"### %ad%n%n- %s ([\`%h\`]($REPO_URL/commit/%H)) by **%an**%n%n" \
             >> CHANGELOG.md
 
-      - name: Commit and push changelog (if changed)
+      - name: Commit and push changelog
         run: |
           if git diff --quiet CHANGELOG.md; then
-            echo "No changes to CHANGELOG.md"
+            echo "No changes to changelog"
             exit 0
           fi
 
           git add CHANGELOG.md
-          git commit -m "docs(changelog): update from git history"
+          git commit -m "docs(changelog): update changelog"
           git push
