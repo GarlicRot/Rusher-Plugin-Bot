@@ -1,18 +1,31 @@
+// src/utils/errorHandler.js
 const logger = require("./logger");
 
 function handleErrors() {
   // Uncaught exceptions (e.g. throw new Error())
   process.on("uncaughtException", (err) => {
-    logger.error(`Uncaught Exception: ${err.stack || err}`);
-    process.exit(1);
+    const msg = err && err.stack ? err.stack : String(err);
+    logger.error("===== Uncaught Exception =====");
+    logger.error(msg);
+    logger.error("===== End Uncaught Exception =====");
+
   });
 
   // Unhandled promise rejections (e.g. rejected promise without .catch)
   process.on("unhandledRejection", (reason, promise) => {
-    logger.error(`Unhandled Rejection: ${reason}`);
+    const msg =
+      reason && reason.stack
+        ? reason.stack
+        : typeof reason === "object"
+        ? JSON.stringify(reason)
+        : String(reason);
+
+    logger.error("===== Unhandled Rejection =====");
+    logger.error(msg);
+    logger.error("===== End Unhandled Rejection =====");
   });
 
-  // Optionally catch signals (e.g. Ctrl+C)
+  // Graceful shutdown on signals (e.g. Ctrl+C, container stop)
   process.on("SIGINT", () => {
     logger.warn("Received SIGINT (Ctrl+C), shutting down...");
     process.exit(0);

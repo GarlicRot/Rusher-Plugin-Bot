@@ -5,6 +5,7 @@ const path = require("path");
 const logger = require("./utils/logger");
 const handleErrors = require("./utils/errorHandler");
 const { loadPluginData } = require("./utils/dataStore");
+
 handleErrors();
 
 // Validate environment variables
@@ -51,15 +52,18 @@ loadPluginData()
       const eventFiles = fs
         .readdirSync(eventsPath)
         .filter((file) => file.endsWith(".js"));
+
       for (const file of eventFiles) {
         const event = require(path.join(eventsPath, file));
         if (event?.name && typeof event.execute === "function") {
           if (event.once) {
             client.once(event.name, (...args) =>
-              event.execute(...args, client)
+              event.execute(...args, client),
             );
           } else {
-            client.on(event.name, (...args) => event.execute(...args, client));
+            client.on(event.name, (...args) =>
+              event.execute(...args, client),
+            );
           }
           logger.info(`Registered event: ${event.name}`);
         } else {
@@ -73,8 +77,25 @@ loadPluginData()
   })
   .then(() => {
     logger.success("Bot logged in successfully.");
+
+    // 🔁 Periodic plugin/theme data refresh
+    const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+    setInterval(() => {
+      loadPluginData()
+        .then(() => {
+          logger.info("Periodic plugin/theme data refresh completed.");
+        })
+        .catch((err) => {
+          logger.error(
+            `Periodic plugin/theme data refresh failed: ${
+              err.stack || err
+            }`,
+          );
+        });
+    }, REFRESH_INTERVAL_MS);
   })
   .catch((err) => {
-    logger.error(`Startup failed: ${err}`);
+    logger.error(`Startup failed: ${err.stack || err}`);
     process.exit(1);
   });
