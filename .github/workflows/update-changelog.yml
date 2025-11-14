@@ -1,42 +1,56 @@
-name: One-Time Commit to Changelog
+name: Update Changelog
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "CHANGELOG.md"
   workflow_dispatch:
 
 jobs:
-  one-time-changelog:
+  update-changelog:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Avoid infinite loops from bot commits
+    if: github.actor != 'github-actions[bot]'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history for complete changelog
 
       - name: Set up Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Append specific commit to CHANGELOG.md
+      - name: Generate CHANGELOG.md from git history
         run: |
-          HASH="9184bdfd361c346467f0acb6060a3eedb984492f"
-          SHORT_HASH=$(echo "$HASH" | cut -c1-7)
-          DATE=$(git show -s --format=%ad --date=format:'%Y-%m-%d' $HASH)
-          MSG=$(git show -s --format=%s $HASH)
-          AUTHOR=$(git show -s --format=%an $HASH)
+          REPO_URL="https://github.com/${{ github.repository }}"
 
-          echo "# 📝 Changelog" > CHANGELOG.md
+          echo "# Changelog" > CHANGELOG.md
           echo "" >> CHANGELOG.md
-          echo "Automatically generated changelog." >> CHANGELOG.md
+          echo "This changelog is automatically generated from Git history." >> CHANGELOG.md
           echo "" >> CHANGELOG.md
           echo "---" >> CHANGELOG.md
           echo "" >> CHANGELOG.md
-          echo "### $DATE" >> CHANGELOG.md
-          echo "- \`$MSG\` ([\`$SHORT_HASH\`](https://github.com/${{ github.repository }}/commit/$HASH)) by **$AUTHOR**" >> CHANGELOG.md
 
-      - name: Commit and push changelog
+          # Oldest -> newest
+          git log --reverse \
+            --date=format:'%Y-%m-%d' \
+            --pretty=format:"### %ad%n- \`%s\` ([\`%h\`]($REPO_URL/commit/%H)) by **%an**%n" \
+            >> CHANGELOG.md
+
+      - name: Commit and push changelog (if changed)
         run: |
+          if git diff --quiet CHANGELOG.md; then
+            echo "No changes to CHANGELOG.md"
+            exit 0
+          fi
+
           git add CHANGELOG.md
-          git commit -m "docs(changelog): initial entry for 9184bdf"
+          git commit -m "docs(changelog): update from git history"
           git push
