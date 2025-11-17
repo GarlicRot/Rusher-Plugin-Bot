@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-17
 
+- Add files via upload ([`72e7537`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/72e753741a98c7d756f68a817c6c169b12edfb32)) by **GarlicRot**
+
+
+### 2025-11-17
+
+- docs(changelog): update changelog ([`1116833`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/1116833e6017b704cc4740ada1bfc1a06e528653)) by **github-actions[bot]**
+
+
+### 2025-11-17
+
 - docs(readme): merge feature list and command documentation into unified section ([`31c01d0`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/31c01d0def29ad78e1587646543b6902153486e6)) by **GarlicRot**
 
 
