@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-17
 
+- docs(readme): merge feature list and command documentation into unified section ([`31c01d0`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/31c01d0def29ad78e1587646543b6902153486e6)) by **GarlicRot**
+
+
+### 2025-11-17
+
+- docs(changelog): update changelog ([`a7dc1eb`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/a7dc1eb2196b17977040256afa1208427f498f3a)) by **github-actions[bot]**
+
+
+### 2025-11-17
+
 - Fix discord badge URL ([`47ee2ac`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/47ee2ac91ef4eaa86ae77bc1c56a3e88687acac4)) by **GarlicRot**
 
 
