@@ -4,6 +4,16 @@ This changelog is automatically generated from Git history.
 
 ---
 
+### 2025-11-17
+
+- Fix discord badge URL ([`47ee2ac`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/47ee2ac91ef4eaa86ae77bc1c56a3e88687acac4)) by **GarlicRot**
+
+
+### 2025-11-14
+
+- docs(changelog): update changelog ([`45dad59`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/45dad59b6640c231a58248f146853b825b941113)) by **github-actions[bot]**
+
+
 ### 2025-11-14
 
 - docs(readme): fix last commit badge by excluding bot commits ([`c4d5721`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/c4d57214e2c30592cf85543ff10ff3205cd16d65)) by **GarlicRot**
