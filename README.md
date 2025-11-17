@@ -10,11 +10,16 @@
 
 # Rusher-Plugin-Bot
 
-Rusher-Plugin-Bot is a Discord bot designed to explore and display information from the official RusherHacks Plugin and Theme registry. It provides fast, searchable access to plugin data directly inside Discord using slash commands and clean, structured embeds.
+Rusher-Plugin-Bot is a Discord bot designed to explore and display information from the official
+[RusherHacks Plugin and Theme registry](https://github.com/RusherDevelopment/rusherhack-plugins).
+It provides fast, searchable access to plugin data directly inside Discord using slash commands and clean, structured embeds.
 
 ## Overview
 
-The bot retrieves plugin and theme metadata from the public RusherDevelopment registry and formats it into clear informational responses. Its goal is to make discovering, comparing, and browsing RusherHacks extensions effortless without needing to search GitHub manually.
+The bot retrieves plugin and theme metadata from the public
+[RusherDevelopment registry](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml)
+and formats it into clear informational responses. Its goal is to make discovering, comparing, and browsing
+RusherHacks extensions effortless without needing to search GitHub manually.
 
 ## Features & Commands
 
@@ -120,11 +125,14 @@ View all plugins and themes that support a specific Minecraft version or version
 ---
 
 ### How It Works
-- Loads the **official `plugins-and-themes.yml`** from GitHub  
+
+- Loads the official
+  [`plugins-and-themes.yml`](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml)
+  from GitHub  
 - Normalizes and caches all plugin/theme data  
 - Adds GitHub metadata (stars, downloads, last commit)  
 - Provides autocomplete for plugin, theme, and creator names  
-- Supports version filtering & pagination
+- Supports version filtering and pagination
 
 ## Changelog
 
