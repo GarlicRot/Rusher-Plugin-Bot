@@ -24,55 +24,86 @@ Every feature is powered by a clean, structured slash command system.
 ---
 
 ### Search Plugins — `/search plugin`
-Look up any plugin by name and view:
 
-- Description and purpose  
-- Latest release version  
+Look up any plugin by name and instantly view:
+
+- Description & purpose  
+- Latest release information  
 - Supported Minecraft versions  
-- Creator info & avatar  
-- GitHub metadata (stars, last commit, download count)
+- Creator details & avatar  
+- GitHub metadata (stars, last commit, downloads)
+
+**Screenshot**
+
+<p align="center">
+  <img src="assets/plugin.png" width="600">
+</p>
 
 **Parameters**
-| Name        | Type   | Required | Description                                   |
-|-------------|--------|----------|-----------------------------------------------|
-| `name`      | string | Yes      | Exact plugin name (autocomplete enabled)      |
-| `mc_version`| string | No       | Filter by a specific Minecraft version        |
+
+| Name         | Type   | Required | Description                                  |
+|--------------|--------|----------|----------------------------------------------|
+| `name`       | string | Yes      | Exact plugin name (autocomplete enabled)     |
+| `mc_version` | string | No       | Filter by a specific Minecraft version       |
 
 ---
 
 ### Search Themes — `/search theme`
-Find UI themes using the same structured output as plugins.
+
+Find UI themes using the same structured, clean output used for plugins.
+
+**Screenshot**
+
+<p align="center">
+  <img src="assets/theme.png" width="600">
+</p>
 
 **Parameters**
-| Name        | Type   | Required | Description                                   |
-|-------------|--------|----------|-----------------------------------------------|
-| `name`      | string | Yes      | Exact theme name (autocomplete enabled)       |
-| `mc_version`| string | No       | Filter by Minecraft version                   |
+
+| Name         | Type   | Required | Description                                   |
+|--------------|--------|----------|-----------------------------------------------|
+| `name`       | string | Yes      | Exact theme name (autocomplete enabled)       |
+| `mc_version` | string | No       | Filter by Minecraft version                   |
 
 ---
 
 ### Browse by Creator — `/search creator`
-List **all** plugins & themes made by a specific creator.
 
-Perfect for browsing a creator’s full collection.
+List **every** plugin & theme made by a specific creator.  
+Perfect for exploring a creator’s entire catalog.
+
+**Screenshot**
+
+<p align="center">
+  <img src="assets/creator.png" width="600">
+</p>
 
 **Parameters**
-| Name        | Type    | Required | Description                                    |
-|-------------|---------|----------|------------------------------------------------|
-| `name`      | string  | Yes      | Creator name (autocomplete enabled)           |
-| `page`      | integer | No       | Page number (default: `1`)                     |
-| `mc_version`| string  | No       | Filter results by Minecraft version            |
+
+| Name         | Type    | Required | Description                                   |
+|--------------|---------|----------|-----------------------------------------------|
+| `name`       | string  | Yes      | Creator name (autocomplete enabled)           |
+| `page`       | integer | No       | Page number (default: 1)                      |
+| `mc_version` | string  | No       | Filter results by Minecraft version           |
 
 ---
 
 ### Filter by MC Version — `/search version`
-See every plugin or theme supporting a specific version or version range.
+
+View all plugins & themes that support a specific version — or even a **version range**, such as `1.20.1–1.21.4`.
+
+**Screenshot**
+
+<p align="center">
+  <img src="assets/mcversion.png" width="600">
+</p>
 
 **Parameters**
-| Name        | Type    | Required | Description                                    |
-|-------------|---------|----------|------------------------------------------------|
-| `mc_version`| string  | Yes      | Version to match (e.g., `1.21.4`)              |
-| `page`      | integer | No       | Page number (default: `1`)                     |
+
+| Name         | Type    | Required | Description                                   |
+|--------------|---------|----------|-----------------------------------------------|
+| `mc_version` | string  | Yes      | Version to match (e.g., `1.21.4`)             |
+| `page`       | integer | No       | Page number (default: 1)                      |
 
 ---
 
