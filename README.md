@@ -3,7 +3,7 @@
   <br><br>
   <img src="https://img.shields.io/github/last-commit/GarlicRot/Rusher-Plugin-Bot?excludeBots=true" />
   <img src="https://img.shields.io/github/languages/code-size/GarlicRot/Rusher-Plugin-Bot" />
-  <a href="https://discord.com/oauth2/authorize?client_id=1402508845582123128">
+  <a href="https://ptb.discord.com/oauth2/authorize?client_id=1402508845582123128&scope=bot">
     <img src="https://img.shields.io/badge/Add%20to%20Discord-5865F2?logo=discord&logoColor=white" />
   </a>
 </p>
