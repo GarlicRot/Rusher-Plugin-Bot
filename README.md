@@ -27,10 +27,10 @@ Every feature is powered by a clean, structured slash command system.
 
 Look up any plugin by name and instantly view:
 
-- Description & purpose  
+- Description and purpose  
 - Latest release information  
 - Supported Minecraft versions  
-- Creator details & avatar  
+- Creator details and avatar  
 - GitHub metadata (stars, last commit, downloads)
 
 **Screenshot**
@@ -39,18 +39,21 @@ Look up any plugin by name and instantly view:
   <img src="assets/plugin.png" width="600">
 </p>
 
-**Parameters**
+<details>
+<summary><strong>Parameters</strong></summary>
 
 | Name         | Type   | Required | Description                                  |
 |--------------|--------|----------|----------------------------------------------|
 | `name`       | string | Yes      | Exact plugin name (autocomplete enabled)     |
 | `mc_version` | string | No       | Filter by a specific Minecraft version       |
 
+</details>
+
 ---
 
 ### Search Themes — `/search theme`
 
-Find UI themes using the same structured, clean output used for plugins.
+Find UI themes using the same structured, rich output used for plugins.
 
 **Screenshot**
 
@@ -58,19 +61,22 @@ Find UI themes using the same structured, clean output used for plugins.
   <img src="assets/theme.png" width="600">
 </p>
 
-**Parameters**
+<details>
+<summary><strong>Parameters</strong></summary>
 
 | Name         | Type   | Required | Description                                   |
 |--------------|--------|----------|-----------------------------------------------|
 | `name`       | string | Yes      | Exact theme name (autocomplete enabled)       |
 | `mc_version` | string | No       | Filter by Minecraft version                   |
 
+</details>
+
 ---
 
 ### Browse by Creator — `/search creator`
 
-List **every** plugin & theme made by a specific creator.  
-Perfect for exploring a creator’s entire catalog.
+List all plugins and themes created by a specific developer.  
+Ideal for exploring a creator’s full catalog.
 
 **Screenshot**
 
@@ -78,7 +84,8 @@ Perfect for exploring a creator’s entire catalog.
   <img src="assets/creator.png" width="600">
 </p>
 
-**Parameters**
+<details>
+<summary><strong>Parameters</strong></summary>
 
 | Name         | Type    | Required | Description                                   |
 |--------------|---------|----------|-----------------------------------------------|
@@ -86,11 +93,13 @@ Perfect for exploring a creator’s entire catalog.
 | `page`       | integer | No       | Page number (default: 1)                      |
 | `mc_version` | string  | No       | Filter results by Minecraft version           |
 
+</details>
+
 ---
 
 ### Filter by MC Version — `/search version`
 
-View all plugins & themes that support a specific version — or even a **version range**, such as `1.20.1–1.21.4`.
+View all plugins and themes that support a specific Minecraft version or version range, such as `1.20.1–1.21.4`.
 
 **Screenshot**
 
@@ -98,12 +107,15 @@ View all plugins & themes that support a specific version — or even a **versio
   <img src="assets/mcversion.png" width="600">
 </p>
 
-**Parameters**
+<details>
+<summary><strong>Parameters</strong></summary>
 
 | Name         | Type    | Required | Description                                   |
 |--------------|---------|----------|-----------------------------------------------|
 | `mc_version` | string  | Yes      | Version to match (e.g., `1.21.4`)             |
 | `page`       | integer | No       | Page number (default: 1)                      |
+
+</details>
 
 ---
 
