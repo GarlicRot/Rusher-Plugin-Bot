@@ -16,34 +16,72 @@ Rusher-Plugin-Bot is a Discord bot designed to explore and display information f
 
 The bot retrieves plugin and theme metadata from the public RusherDevelopment registry and formats it into clear informational responses. Its goal is to make discovering, comparing, and browsing RusherHacks extensions effortless without needing to search GitHub manually.
 
-## What the Bot Can Do
+## Features & Commands
 
-### Search Plugins
-Look up individual plugins by name and instantly view:
+Rusher-Plugin-Bot provides fast, searchable access to the official RusherHacks Plugin & Theme registry directly inside Discord.  
+Every feature is powered by a clean, structured slash command system.
+
+---
+
+### Search Plugins — `/search plugin`
+Look up any plugin by name and view:
+
 - Description and purpose  
 - Latest release version  
 - Supported Minecraft versions  
-- Creator information  
-- Repository link and metadata
+- Creator info & avatar  
+- GitHub metadata (stars, last commit, download count)
 
-### Search Themes
-Find UI themes with the same searchable, structured layout used for plugins.
+**Parameters**
+| Name        | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| `name`      | string | Yes      | Exact plugin name (autocomplete enabled)      |
+| `mc_version`| string | No       | Filter by a specific Minecraft version        |
 
-### Filter by Creator
-List all plugins and themes made by a specific creator, with automatic pagination when needed.
+---
 
-### Filter by Minecraft Version
-Show all plugins and themes that support a specific version or range of versions.
+### Search Themes — `/search theme`
+Find UI themes using the same structured output as plugins.
 
-### Global Refresh
-A developer-only command allows the bot to refresh its cached dataset from the live registry, ensuring results stay current.
+**Parameters**
+| Name        | Type   | Required | Description                                   |
+|-------------|--------|----------|-----------------------------------------------|
+| `name`      | string | Yes      | Exact theme name (autocomplete enabled)       |
+| `mc_version`| string | No       | Filter by Minecraft version                   |
 
-## How It Works
+---
 
-- The bot retrieves the official `plugins-and-themes.yml` registry.
-- Data is processed, normalized, and cached for speed and reliability.
-- Slash commands feed this data into carefully formatted Discord embeds.
-- GitHub metadata (stars, last update time, etc.) is automatically included when available.
+### Browse by Creator — `/search creator`
+List **all** plugins & themes made by a specific creator.
+
+Perfect for browsing a creator’s full collection.
+
+**Parameters**
+| Name        | Type    | Required | Description                                    |
+|-------------|---------|----------|------------------------------------------------|
+| `name`      | string  | Yes      | Creator name (autocomplete enabled)           |
+| `page`      | integer | No       | Page number (default: `1`)                     |
+| `mc_version`| string  | No       | Filter results by Minecraft version            |
+
+---
+
+### Filter by MC Version — `/search version`
+See every plugin or theme supporting a specific version or version range.
+
+**Parameters**
+| Name        | Type    | Required | Description                                    |
+|-------------|---------|----------|------------------------------------------------|
+| `mc_version`| string  | Yes      | Version to match (e.g., `1.21.4`)              |
+| `page`      | integer | No       | Page number (default: `1`)                     |
+
+---
+
+### How It Works
+- Loads the **official `plugins-and-themes.yml`** from GitHub  
+- Normalizes and caches all plugin/theme data  
+- Adds GitHub metadata (stars, downloads, last commit)  
+- Provides autocomplete for plugin, theme, and creator names  
+- Supports version filtering & pagination
 
 ## Changelog
 
