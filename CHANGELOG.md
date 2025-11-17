@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-17
 
+- docs(readme): collapse parameter tables and improve Features & Commands section ([`ad03111`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/ad03111b09348e9aff3b479a19f9c0983e0c6e2d)) by **GarlicRot**
+
+
+### 2025-11-17
+
+- docs(changelog): update changelog ([`04ca97d`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/04ca97d3ceb870c10fbd876e6747f0ccd97ceb1a)) by **github-actions[bot]**
+
+
+### 2025-11-17
+
 - docs(readme): add feature screenshots and enhance command documentation ([`6262a81`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/6262a811180811d7f147f7f9ccb97c3f64810650)) by **GarlicRot**
 
 
