@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-17
 
+- docs(readme): add direct links to official registry and YAML source ([`e657086`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/e657086c77239d4a82ac7662d8dc6ac0ca1354f2)) by **GarlicRot**
+
+
+### 2025-11-17
+
+- docs(changelog): update changelog ([`9262c65`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/9262c65a91bf8537947f059c031f8e1ff1911d9b)) by **github-actions[bot]**
+
+
+### 2025-11-17
+
 - docs(readme): collapse parameter tables and improve Features & Commands section ([`ad03111`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/ad03111b09348e9aff3b479a19f9c0983e0c6e2d)) by **GarlicRot**
 
 
