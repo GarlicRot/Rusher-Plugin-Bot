@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2025-11-18
 
+- Update README.md ([`b2481e7`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/b2481e72dd516de5593b4da7a339e42536093dc1)) by **GarlicRot**
+
+
+### 2025-11-18
+
+- docs(changelog): update changelog ([`428a502`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/428a5024f2bae1470beb9cb7670046ed58adb100)) by **github-actions[bot]**
+
+
+### 2025-11-18
+
 - Update README.md ([`727bf13`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/727bf130a694aecc1d9c008e82a3c504bbec9fe1)) by **GarlicRot**
 
 
