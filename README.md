@@ -19,7 +19,7 @@ It provides fast, searchable access to plugin data directly inside Discord using
 The bot retrieves plugin and theme metadata from the public
 [RusherDevelopment registry](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml)
 and formats it into clear informational responses. Its goal is to make discovering, comparing, and browsing
-RusherHacks extensions effortless without needing to search GitHub manually.
+Rusherhack extensions effortless without needing to search GitHub manually.
 
 ## Features & Commands
 
