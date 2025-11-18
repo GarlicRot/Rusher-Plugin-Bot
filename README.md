@@ -11,7 +11,7 @@
 # Rusher-Plugin-Bot
 
 Rusher-Plugin-Bot is a Discord bot designed to explore and display information from the official
-[RusherHacks Plugin and Theme registry](https://github.com/RusherDevelopment/rusherhack-plugins).
+[Rusherhack Plugin and Theme registry](https://github.com/RusherDevelopment/rusherhack-plugins).
 It provides fast, searchable access to plugin data directly inside Discord using slash commands and clean, structured embeds.
 
 ## Overview
@@ -23,7 +23,7 @@ RusherHacks extensions effortless without needing to search GitHub manually.
 
 ## Features & Commands
 
-Rusher-Plugin-Bot provides fast, searchable access to the official RusherHacks Plugin & Theme registry directly inside Discord.  
+Rusher-Plugin-Bot provides fast, searchable access to the official Rusherhack Plugin & Theme registry directly inside Discord.  
 Every feature is powered by a clean, structured slash command system.
 
 ---
