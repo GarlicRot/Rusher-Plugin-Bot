@@ -37,6 +37,26 @@ module.exports = {
         }
       }
 
+      // Button interactions (pagination, etc.)
+      if (interaction.isButton()) {
+        const customId = interaction.customId || "";
+        const [prefix] = customId.split(":");
+
+        // Handle search pagination buttons
+        if (prefix === "search") {
+          const command = client.commands.get("search");
+          if (command && typeof command.handleButton === "function") {
+            try {
+              await command.handleButton(interaction);
+            } catch (error) {
+              logger.error(
+                `Button handler error for /search: ${error.stack || error}`,
+              );
+            }
+          }
+        }
+      }
+
       // Autocomplete interactions
       if (interaction.isAutocomplete()) {
         const command = client.commands.get(interaction.commandName);
