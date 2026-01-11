@@ -101,16 +101,63 @@ function labelForItem(it) {
   return "Plugin";
 }
 
+/**
+ * Best-effort URL for “Latest”:
+ * - prefer jar_url from YAML
+ * - then download_url / latest_download_url
+ * - then GitHub release tag page
+ */
+function getLatestUrl(it) {
+  const direct =
+    it.jar_url ||
+    it.download_url ||
+    it.latest_download_url ||
+    (it.download && it.download.url);
+  if (direct) return direct;
+
+  if (it.repo && it.latest_release_tag) {
+    return `https://github.com/${it.repo}/releases/tag/${encodeURIComponent(
+      it.latest_release_tag,
+    )}`;
+  }
+
+  return null;
+}
+
 /* shared list helpers for creator + version */
 
+/**
+ * Return fully enriched items (including any extra fields)
+ * for a given creator + optional MC filter.
+ */
 function getItemsByCreator(creator, mc) {
+  const lcCreator = (creator || "").toLowerCase();
   const byCreator = (it) =>
-    (it?.creator?.name || "").toLowerCase() === creator.toLowerCase();
+    (it?.creator?.name || "").toLowerCase() === lcCreator;
 
-  return [
-    ...filterAndSort(getPlugins, creator, mc).filter(byCreator),
-    ...filterAndSort(getThemes, creator, mc).filter(byCreator),
-  ];
+  const pluginItems = filterAndSort(getPlugins, creator, mc)
+    .filter(byCreator)
+    .map((it) => getPluginByName(it.name) || it);
+
+  const themeItems = filterAndSort(getThemes, creator, mc)
+    .filter(byCreator)
+    .map((it) => getThemeByName(it.name) || it);
+
+  return [...pluginItems, ...themeItems];
+}
+
+/**
+ * Return fully enriched items for a given MC version.
+ */
+function getItemsByVersion(mc) {
+  const pluginItems = filterAndSort(getPlugins, "", mc).map(
+    (it) => getPluginByName(it.name) || it,
+  );
+  const themeItems = filterAndSort(getThemes, "", mc).map(
+    (it) => getThemeByName(it.name) || it,
+  );
+
+  return [...pluginItems, ...themeItems];
 }
 
 function buildCreatorPagePayload(creator, mc, items, page) {
@@ -123,12 +170,17 @@ function buildCreatorPagePayload(creator, mc, items, page) {
     })** — ${kind}`;
     const desc = truncate(it.description, 180);
 
+    const url = getLatestUrl(it);
+    const latestLine = it.latest_release_tag
+      ? url
+        ? `Latest: [${it.latest_release_tag}](${url})`
+        : `Latest: \`${it.latest_release_tag}\``
+      : null;
+
     return [
       title,
       desc,
-      it.latest_release_tag
-        ? `Latest: \`${it.latest_release_tag}\``
-        : null,
+      latestLine,
       it.mc_versions ? `MC: \`${it.mc_versions}\`` : null,
     ]
       .filter(Boolean)
@@ -144,6 +196,13 @@ function buildCreatorPagePayload(creator, mc, items, page) {
       }`,
     });
 
+  // Show creator avatar + link on the embed itself
+  embed.setAuthor({
+    name: creator,
+    iconURL: items[0]?.creator?.avatar || null,
+    url: `https://github.com/${encodeURIComponent(creator)}`,
+  });
+
   const components = [];
 
   if (pageCount > 1) {
@@ -152,16 +211,12 @@ function buildCreatorPagePayload(creator, mc, items, page) {
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(
-          `search:creator:${p - 1}:${encCreator}:${encMc}`,
-        )
+        .setCustomId(`search:creator:${p - 1}:${encCreator}:${encMc}`)
         .setLabel("Previous")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(p <= 1),
       new ButtonBuilder()
-        .setCustomId(
-          `search:creator:${p + 1}:${encCreator}:${encMc}`,
-        )
+        .setCustomId(`search:creator:${p + 1}:${encCreator}:${encMc}`)
         .setLabel("Next")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(p >= pageCount),
@@ -171,20 +226,10 @@ function buildCreatorPagePayload(creator, mc, items, page) {
   }
 
   return {
-    content: `[View GitHub Profile](https://github.com/${encodeURIComponent(
-      creator,
-    )})`,
     embeds: [embed],
     components,
     allowedMentions: { parse: [] },
   };
-}
-
-function getItemsByVersion(mc) {
-  return [
-    ...filterAndSort(getPlugins, "", mc),
-    ...filterAndSort(getThemes, "", mc),
-  ];
 }
 
 function buildVersionPagePayload(mc, items, page) {
@@ -197,12 +242,17 @@ function buildVersionPagePayload(mc, items, page) {
     })** — ${kind}`;
     const desc = truncate(it.description, 180);
 
+    const url = getLatestUrl(it);
+    const latestLine = it.latest_release_tag
+      ? url
+        ? `Latest: [${it.latest_release_tag}](${url})`
+        : `Latest: \`${it.latest_release_tag}\``
+      : null;
+
     return [
       title,
       desc,
-      it.latest_release_tag
-        ? `Latest: \`${it.latest_release_tag}\``
-        : null,
+      latestLine,
       it.mc_versions ? `MC: \`${it.mc_versions}\`` : null,
     ]
       .filter(Boolean)
@@ -404,7 +454,43 @@ module.exports = {
       }
 
       const stats = await getRepoDetails(item.repo);
-      const embed = await createPluginEmbed(item, stats);
+
+      const embed = await createPluginEmbed(
+        item,
+        interaction.user,  // user
+        true,              // isPlugin
+        stats,             // githubInfo
+        interaction.client // client for footer avatar
+      );
+
+      // Add/override author with creator avatar + GitHub profile link
+      const creatorName = item?.creator?.name;
+      if (creatorName) {
+        embed.setAuthor({
+          name: creatorName,
+          iconURL: item.creator?.avatar || null,
+          url: `https://github.com/${encodeURIComponent(creatorName)}`,
+        });
+      }
+
+      // Ensure we have a Latest field with clickable jar link
+      const hasLatestField =
+        Array.isArray(embed.data?.fields) &&
+        embed.data.fields.some(
+          (f) =>
+            typeof f.name === "string" &&
+            f.name.toLowerCase().includes("latest"),
+        );
+
+      const latestUrl = getLatestUrl(item);
+
+      if (item.latest_release_tag && latestUrl && !hasLatestField) {
+        embed.addFields({
+          name: "Latest",
+          value: `[${item.latest_release_tag}](${latestUrl})`,
+          inline: true,
+        });
+      }
 
       return interaction.reply({ embeds: [embed] });
     }
@@ -430,7 +516,43 @@ module.exports = {
       }
 
       const stats = await getRepoDetails(item.repo);
-      const embed = await createPluginEmbed(item, stats);
+
+      const embed = await createPluginEmbed(
+        item,
+        interaction.user,  // user
+        false,             // isPlugin = false for themes
+        stats,             // githubInfo
+        interaction.client // client for footer avatar
+      );
+
+      // Author: creator avatar + GitHub link
+      const creatorName = item?.creator?.name;
+      if (creatorName) {
+        embed.setAuthor({
+          name: creatorName,
+          iconURL: item.creator?.avatar || null,
+          url: `https://github.com/${encodeURIComponent(creatorName)}`,
+        });
+      }
+
+      // Latest field with clickable jar link (if not already added)
+      const hasLatestField =
+        Array.isArray(embed.data?.fields) &&
+        embed.data.fields.some(
+          (f) =>
+            typeof f.name === "string" &&
+            f.name.toLowerCase().includes("latest"),
+        );
+
+      const latestUrl = getLatestUrl(item);
+
+      if (item.latest_release_tag && latestUrl && !hasLatestField) {
+        embed.addFields({
+          name: "Latest",
+          value: `[${item.latest_release_tag}](${latestUrl})`,
+          inline: true,
+        });
+      }
 
       return interaction.reply({ embeds: [embed] });
     }

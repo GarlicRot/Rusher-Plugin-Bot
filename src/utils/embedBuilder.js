@@ -1,9 +1,24 @@
 const { EmbedBuilder } = require("discord.js");
 
 /**
+ * Safely get the bot's avatar URL for use in the footer.
+ * @param {Client|null} client
+ * @returns {string|null}
+ */
+function getBotAvatarURL(client) {
+  if (!client || !client.user) return null;
+  try {
+    // size is optional, but keeps it nice and crisp
+    return client.user.displayAvatarURL({ size: 64 });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Creates a styled embed for a plugin or theme.
  * @param {Object} data - Plugin/theme entry from YAML.
- * @param {Object} user - Discord user who triggered the command.
+ * @param {User} user - Discord user who triggered the command (kept for future use).
  * @param {boolean} isPlugin - Whether the data is a plugin (true) or theme (false).
  * @param {Object} [githubInfo] - Optional GitHub data (stars, lastCommit, downloadCount).
  * @param {Client} [client] - Discord client instance to fetch bot avatar.
@@ -32,7 +47,7 @@ function createPluginEmbed(
     )
     .setFooter({
       text: "Rusher Plugin Bot",
-      iconURL: client?.user?.displayAvatarURL() || null,
+      iconURL: getBotAvatarURL(client), // 👈 bot avatar in footer
     })
     .setTimestamp(Date.now());
 
@@ -44,7 +59,7 @@ function createPluginEmbed(
     });
   }
 
-  // Combined Plugin Info
+  // Combined Plugin/Theme Info
   let combinedInfo = "";
 
   if (data.mc_versions) {
