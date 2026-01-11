@@ -4,6 +4,16 @@ This changelog is automatically generated from Git history.
 
 ---
 
+### 2026-01-10
+
+- feat(search): add button-based pagination for creator/version results and remove page option ([`7fbe0da`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/7fbe0daf73dd083c243c2fe07242f27457d404ba)) by **GarlicRot**
+
+
+### 2025-11-18
+
+- docs(changelog): update changelog ([`0fc1766`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/0fc1766f2423dee05e8cdeb1ee977320f36610ca)) by **github-actions[bot]**
+
+
 ### 2025-11-18
 
 - Update README.md ([`b2481e7`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/b2481e72dd516de5593b4da7a339e42536093dc1)) by **GarlicRot**
