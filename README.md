@@ -81,7 +81,7 @@ Find UI themes using the same structured, rich output used for plugins.
 ### Browse by Creator — `/search creator`
 
 List all plugins and themes created by a specific developer.  
-Ideal for exploring a creator’s full catalog.
+Results use interactive pagination buttons for seamless browsing.
 
 **Screenshot**
 
@@ -95,7 +95,6 @@ Ideal for exploring a creator’s full catalog.
 | Name         | Type    | Required | Description                                   |
 |--------------|---------|----------|-----------------------------------------------|
 | `name`       | string  | Yes      | Creator name (autocomplete enabled)           |
-| `page`       | integer | No       | Page number (default: 1)                      |
 | `mc_version` | string  | No       | Filter results by Minecraft version           |
 
 </details>
@@ -104,7 +103,8 @@ Ideal for exploring a creator’s full catalog.
 
 ### Filter by MC Version — `/search version`
 
-View all plugins and themes that support a specific Minecraft version or version range, such as `1.20.1–1.21.4`.
+View all plugins and themes that support a specific Minecraft version or version range (e.g., `1.20.1–1.21.4`).  
+Results are paginated via buttons for natural scrolling.
 
 **Screenshot**
 
@@ -115,10 +115,9 @@ View all plugins and themes that support a specific Minecraft version or version
 <details>
 <summary><strong>Parameters</strong></summary>
 
-| Name         | Type    | Required | Description                                   |
-|--------------|---------|----------|-----------------------------------------------|
-| `mc_version` | string  | Yes      | Version to match (e.g., `1.21.4`)             |
-| `page`       | integer | No       | Page number (default: 1)                      |
+| Name         | Type   | Required | Description                                   |
+|--------------|--------|----------|-----------------------------------------------|
+| `mc_version` | string | Yes      | Version or range to match (e.g. `1.21.4`)     |
 
 </details>
 
@@ -128,11 +127,14 @@ View all plugins and themes that support a specific Minecraft version or version
 
 - Loads the official
   [`plugins-and-themes.yml`](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml)
-  from GitHub  
-- Normalizes and caches all plugin/theme data  
-- Adds GitHub metadata (stars, downloads, last commit)  
-- Provides autocomplete for plugin, theme, and creator names  
-- Supports version filtering and pagination
+  from GitHub
+- Normalizes and caches plugin/theme metadata in memory for fast lookup
+- Enriches results with GitHub repository information (stars, downloads, last commit)
+- Supports autocomplete for plugin, theme, and creator names
+- Supports version filtering and button-based pagination
+- Provides direct release download links when available
+- Formats output using structured Discord embeds with creator attribution and bot footer branding
+
 
 ## Changelog
 
