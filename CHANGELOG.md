@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2026-01-10
 
+- docs: update README for new search pagination and bot improvements ([`ec59fd1`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/ec59fd195452a135013541295fe2ebc80029594f)) by **GarlicRot**
+
+
+### 2026-01-11
+
+- docs(changelog): update changelog ([`b285f73`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/b285f735519faaa462503f649d1eca53c85527b9)) by **github-actions[bot]**
+
+
+### 2026-01-10
+
 - feat: improve search embeds and latest download links ([`f06bc16`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/f06bc16c409d8604ae4e27df70890fd365db137f)) by **GarlicRot**
 
 
