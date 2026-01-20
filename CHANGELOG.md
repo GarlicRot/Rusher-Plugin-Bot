@@ -4,6 +4,16 @@ This changelog is automatically generated from Git history.
 
 ---
 
+### 2026-01-20
+
+- Remove latest release tag from embedBuilder ([`2fe437b`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/2fe437b93828a944f844a4ea72cac2c089430941)) by **GarlicRot**
+
+
+### 2026-01-11
+
+- docs(changelog): update changelog ([`539340d`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/539340d687a65718cef839b2f44575203678e8c4)) by **github-actions[bot]**
+
+
 ### 2026-01-10
 
 - docs: update README for new search pagination and bot improvements ([`ec59fd1`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/ec59fd195452a135013541295fe2ebc80029594f)) by **GarlicRot**
