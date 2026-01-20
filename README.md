@@ -28,96 +28,119 @@ Every feature is powered by a clean, structured slash command system.
 
 ---
 
-### Search Plugins — `/search plugin`
-
+## `/search plugin`
 Look up any plugin by name and instantly view:
 
 - Description and purpose  
-- Latest release information  
-- Supported Minecraft versions  
-- Creator details and avatar  
-- GitHub metadata (stars, last commit, downloads)
+- Latest release info  
+- Supported MC versions  
+- Creator details & avatar  
+- GitHub metadata (stars, commits, downloads)
 
-**Screenshot**
+<details>
+<summary><strong>Screenshots</strong></summary>
+
+<p align="center">
+  <img src="assets/PluginEmbed.png" width="600">
+</p>
 
 <p align="center">
   <img src="assets/plugin.png" width="600">
 </p>
 
+</details>
+
 <details>
 <summary><strong>Parameters</strong></summary>
 
-| Name         | Type   | Required | Description                                  |
-|--------------|--------|----------|----------------------------------------------|
-| `name`       | string | Yes      | Exact plugin name (autocomplete enabled)     |
-| `mc_version` | string | No       | Filter by a specific Minecraft version       |
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Exact plugin name (autocomplete enabled) |
+| `mc_version` | string | No | Filter by a specific Minecraft version |
 
 </details>
 
 ---
 
-### Search Themes — `/search theme`
+## `/search theme`
+Find UI themes using the same structured embed output used for plugins.
 
-Find UI themes using the same structured, rich output used for plugins.
+<details>
+<summary><strong>Screenshots</strong></summary>
 
-**Screenshot**
+<p align="center">
+  <img src="assets/ThemeEmbed.png" width="600">
+</p>
 
 <p align="center">
   <img src="assets/theme.png" width="600">
 </p>
 
+</details>
+
 <details>
 <summary><strong>Parameters</strong></summary>
 
-| Name         | Type   | Required | Description                                   |
-|--------------|--------|----------|-----------------------------------------------|
-| `name`       | string | Yes      | Exact theme name (autocomplete enabled)       |
-| `mc_version` | string | No       | Filter by Minecraft version                   |
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Exact theme name (autocomplete enabled) |
+| `mc_version` | string | No | Filter by Minecraft version |
 
 </details>
 
 ---
 
-### Browse by Creator — `/search creator`
+## `/search creator`
+List all plugins & themes by a specific creator.  
+Uses interactive pagination buttons for browsing.
 
-List all plugins and themes created by a specific developer.  
-Results use interactive pagination buttons for seamless browsing.
+<details>
+<summary><strong>Screenshots</strong></summary>
 
-**Screenshot**
+<p align="center">
+  <img src="assets/CreatorEmbed.png" width="600">
+</p>
 
 <p align="center">
   <img src="assets/creator.png" width="600">
 </p>
 
+</details>
+
 <details>
 <summary><strong>Parameters</strong></summary>
 
-| Name         | Type    | Required | Description                                   |
-|--------------|---------|----------|-----------------------------------------------|
-| `name`       | string  | Yes      | Creator name (autocomplete enabled)           |
-| `mc_version` | string  | No       | Filter results by Minecraft version           |
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Creator name (autocomplete enabled) |
+| `mc_version` | string | No | Filter by Minecraft version |
 
 </details>
 
 ---
 
-### Filter by MC Version — `/search version`
+## `/search version`
+View all plugins & themes supporting a specific MC version or version range (e.g. `1.20.1–1.21.4`).
 
-View all plugins and themes that support a specific Minecraft version or version range (e.g., `1.20.1–1.21.4`).  
-Results are paginated via buttons for natural scrolling.
+<details>
+<summary><strong>Screenshots</strong></summary>
 
-**Screenshot**
+<p align="center">
+  <img src="assets/VersionEmbed.png" width="600">
+</p>
 
 <p align="center">
   <img src="assets/mcversion.png" width="600">
 </p>
 
+</details>
+
 <details>
 <summary><strong>Parameters</strong></summary>
 
-| Name         | Type   | Required | Description                                   |
-|--------------|--------|----------|-----------------------------------------------|
-| `mc_version` | string | Yes      | Version or range to match (e.g. `1.21.4`)     |
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `mc_version` | string | Yes | Version or range to match (e.g. `1.21.4`) |
 
 </details>
 
