@@ -1,29 +1,30 @@
 const { EmbedBuilder } = require("discord.js");
 
-/**
- * Safely get the bot's avatar URL for use in the footer.
- * @param {Client|null} client
- * @returns {string|null}
- */
 function getBotAvatarURL(client) {
   if (!client || !client.user) return null;
   try {
-    // size is optional, but keeps it nice and crisp
     return client.user.displayAvatarURL({ size: 64 });
   } catch {
     return null;
   }
 }
 
-/**
- * Creates a styled embed for a plugin or theme.
- * @param {Object} data - Plugin/theme entry from YAML.
- * @param {User} user - Discord user who triggered the command (kept for future use).
- * @param {boolean} isPlugin - Whether the data is a plugin (true) or theme (false).
- * @param {Object} [githubInfo] - Optional GitHub data (stars, lastCommit, downloadCount).
- * @param {Client} [client] - Discord client instance to fetch bot avatar.
- * @returns {EmbedBuilder}
- */
+function resolveScreenshotUrl(screenshotUrl) {
+  if (!screenshotUrl || typeof screenshotUrl !== "string") return null;
+
+  if (screenshotUrl.startsWith("http://") || screenshotUrl.startsWith("https://")) {
+    return screenshotUrl;
+  }
+
+  if (screenshotUrl.startsWith("./")) {
+    const RAW_BASE = "https://raw.githubusercontent.com/RusherDevelopment/rusherhack-plugins/main/";
+    const filePath = screenshotUrl.replace("./", "").split(" ").join("%20");
+    return RAW_BASE + filePath;
+  }
+
+  return null;
+}
+
 function createPluginEmbed(
   data,
   user,
@@ -32,9 +33,6 @@ function createPluginEmbed(
   client = null
 ) {
   const repoUrl = `https://github.com/${data.repo}`;
-  const releaseUrl = data.latest_release_tag
-    ? `${repoUrl}/releases/tag/${data.latest_release_tag}`
-    : `${repoUrl}/releases`;
 
   const embed = new EmbedBuilder()
     .setColor(data.is_core ? 0x3498db : 0x00ff88)
@@ -51,7 +49,6 @@ function createPluginEmbed(
     })
     .setTimestamp(Date.now());
 
-  // Author (GitHub plugin creator)
   if (data.creator?.name || data.creator?.avatar) {
     embed.setAuthor({
       name: data.creator.name || "Unknown Creator",
@@ -59,7 +56,6 @@ function createPluginEmbed(
     });
   }
 
-  // Combined Plugin/Theme Info
   let combinedInfo = "";
 
   if (data.mc_versions) {
@@ -70,7 +66,6 @@ function createPluginEmbed(
     combinedInfo += `**Core Plugin:** ${data.is_core ? "✅" : "❌"}\n`;
   }
 
-  // GitHub Info Section
   const { stars, lastCommit, downloadCount } = githubInfo || {};
   let githubStats = "";
 
@@ -91,7 +86,6 @@ function createPluginEmbed(
     githubStats += `**Last Commit:** ${commitDate}`;
   }
 
-  // Add fields side by side
   const fields = [];
 
   if (combinedInfo.trim().length > 0) {
@@ -112,6 +106,14 @@ function createPluginEmbed(
 
   if (fields.length > 0) {
     embed.addFields(fields);
+  }
+
+  if (Array.isArray(data.screenshots) && data.screenshots.length > 0) {
+    const screenshot = data.screenshots[Math.floor(Math.random() * data.screenshots.length)];
+    const imageUrl = resolveScreenshotUrl(screenshot.url);
+    if (imageUrl) {
+      embed.setThumbnail(imageUrl);
+    }
   }
 
   return embed;
