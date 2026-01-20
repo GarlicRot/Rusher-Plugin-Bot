@@ -47,7 +47,7 @@ function createPluginEmbed(
     )
     .setFooter({
       text: "Rusher Plugin Bot",
-      iconURL: getBotAvatarURL(client), // 👈 bot avatar in footer
+      iconURL: getBotAvatarURL(client),
     })
     .setTimestamp(Date.now());
 
@@ -64,10 +64,6 @@ function createPluginEmbed(
 
   if (data.mc_versions) {
     combinedInfo += `**MC Versions:** ${data.mc_versions}\n`;
-  }
-
-  if (data.latest_release_tag) {
-    combinedInfo += `**Latest Release:** [${data.latest_release_tag}](${releaseUrl})\n`;
   }
 
   if (data.is_core !== undefined) {
