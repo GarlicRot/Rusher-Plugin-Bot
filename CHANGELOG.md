@@ -6,6 +6,16 @@ This changelog is automatically generated from Git history.
 
 ### 2026-01-20
 
+- Add files via upload ([`216ee14`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/216ee1420164ce9feee167265667f1641cd80af1)) by **GarlicRot**
+
+
+### 2026-01-20
+
+- docs(changelog): update changelog ([`094d14c`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/094d14c0f0aebf8cf746b045d8ea20c34267e204)) by **github-actions[bot]**
+
+
+### 2026-01-20
+
 - Add screenshot URL resolution to embed builder ([`8ba3656`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/8ba3656c47f64e57397caeb63ca0888387ef3bbb)) by **GarlicRot**
 
 
