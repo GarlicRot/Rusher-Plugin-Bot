@@ -4,6 +4,16 @@ This changelog is automatically generated from Git history.
 
 ---
 
+### 2026-01-27
+
+- Enhance bot presence and uptime tracking ([`74f5e8f`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/74f5e8fb7cf99e5139246973bdbb8d844efd5c69)) by **GarlicRot**
+
+
+### 2026-01-20
+
+- docs(changelog): update changelog ([`8e80aad`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/8e80aade8194c3b0b20fd5f779b865be8915f6a0)) by **github-actions[bot]**
+
+
 ### 2026-01-20
 
 - Update README ([`950f4f4`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/950f4f455c5c61466739fa96f2a7c514a91c1d9e)) by **GarlicRot**
