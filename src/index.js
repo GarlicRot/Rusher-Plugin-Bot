@@ -1,7 +1,8 @@
 require("dotenv").config();
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, Collection, ActivityType } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
+const yaml = require("js-yaml");
 const logger = require("./utils/logger");
 const handleErrors = require("./utils/errorHandler");
 const { loadPluginData } = require("./utils/dataStore");
@@ -19,6 +20,38 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 client.commands = new Collection();
+
+// Uptime start stamp
+const startedAt = Date.now();
+
+function formatUptime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+
+  return `Online for ${parts.join(" ")}`;
+}
+
+function getCounts() {
+  try {
+    const ymlPath = path.join(__dirname, "cache", "plugins-and-themes.yml");
+    const raw = fs.readFileSync(ymlPath, "utf8");
+    const data = yaml.load(raw) || {};
+
+    return {
+      plugins: Array.isArray(data.plugins) ? data.plugins.length : 0,
+      themes: Array.isArray(data.themes) ? data.themes.length : 0,
+    };
+  } catch {
+    return { plugins: 0, themes: 0 };
+  }
+}
 
 // Load plugin/theme YAML data from GitHub first
 loadPluginData()
@@ -49,9 +82,7 @@ loadPluginData()
     // Dynamically load all events
     const eventsPath = path.join(__dirname, "events");
     if (fs.existsSync(eventsPath)) {
-      const eventFiles = fs
-        .readdirSync(eventsPath)
-        .filter((file) => file.endsWith(".js"));
+      const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".js"));
 
       for (const file of eventFiles) {
         const event = require(path.join(eventsPath, file));
@@ -78,9 +109,34 @@ loadPluginData()
   .then(() => {
     logger.success("Bot logged in successfully.");
 
-    // 🔁 Periodic plugin/theme data refresh
-    const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+    const ROTATE_MS = 5 * 60 * 1000; // 5 minutes
 
+    const updatePresence = () => {
+      const uptime = formatUptime(Date.now() - startedAt);
+      const { plugins, themes } = getCounts();
+
+      const messages = [
+        uptime,
+        `${plugins} plugins in the registry`,
+        `${themes} themes in the registry`,
+        `${plugins} plugins • ${themes} themes`,
+        `Try /search plugin`,
+        `Try /search theme`,
+        `Try /search creator`,
+      ];
+
+      const msg = messages[Math.floor(Math.random() * messages.length)];
+
+      client.user.setPresence({
+        status: "online",
+        activities: [{ type: ActivityType.Playing, name: msg }],
+      });
+    };
+
+    updatePresence();
+    setInterval(updatePresence, ROTATE_MS);
+
+    const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
     setInterval(() => {
       loadPluginData()
         .then(() => {
@@ -88,9 +144,7 @@ loadPluginData()
         })
         .catch((err) => {
           logger.error(
-            `Periodic plugin/theme data refresh failed: ${
-              err.stack || err
-            }`,
+            `Periodic plugin/theme data refresh failed: ${err.stack || err}`,
           );
         });
     }, REFRESH_INTERVAL_MS);
