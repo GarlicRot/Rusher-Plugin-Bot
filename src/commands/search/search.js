@@ -211,6 +211,7 @@ async function buildCreatorPagePayload(creator, mc, items, page) {
   }).join("\n\n");
 
   const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
     .setTitle(`Items by Creator: ${creator}`)
     .setDescription(blocks)
     .setFooter({
@@ -255,14 +256,36 @@ async function buildCreatorPagePayload(creator, mc, items, page) {
   };
 }
 
-function buildVersionPagePayload(mc, items, page) {
+async function buildVersionPagePayload(mc, items, page) {
   const { slice, p, pageCount, total } = paginate(items, page, PER_PAGE);
 
-  const blocks = toBlocks(slice, (it) => {
+  const githubStats = await Promise.all(
+    slice.map(async (item) => {
+      try {
+        return await getRepoDetails(item.repo, { summaryOnly: true });
+      } catch (error) {
+        console.warn(`[Version stats] ${item.repo}: ${error.message}`);
+        return {};
+      }
+    })
+  );
+
+  const blocks = slice.map((it, index) => {
     const kind = labelForItem(it);
+    const stats = githubStats[index] || {};
+
+    const counts = [
+      Number.isFinite(stats.stars)
+        ? `★${stats.stars.toLocaleString("en-US")}`
+        : null,
+      Number.isFinite(stats.downloadCount)
+        ? `⬇${stats.downloadCount.toLocaleString("en-US")}`
+        : null,
+    ].filter(Boolean);
+
     const title = `**[${it.name}](${
       it.repo ? `https://github.com/${it.repo}` : "#"
-    })** — ${kind}`;
+    })** — ${kind}${counts.length ? ` — ${counts.join(" — ")}` : ""}`;
     const desc = truncate(it.description, 180);
 
     const url = getLatestUrl(it);
@@ -279,7 +302,7 @@ function buildVersionPagePayload(mc, items, page) {
     ]
       .filter(Boolean)
       .join("\n");
-  });
+  }).join("\n\n");
 
   const themeCount = items.filter(
     (item) => item.type === "theme"
@@ -287,6 +310,7 @@ function buildVersionPagePayload(mc, items, page) {
   const pluginCount = total - themeCount;
 
   const embed = new EmbedBuilder()
+    .setColor(0xf1c40f)
     .setTitle(`Registry listings for MC ${mc}`)
     .setDescription(blocks)
     .setFooter({
@@ -524,6 +548,7 @@ module.exports = {
         });
       }
 
+      await interaction.deferReply();
       const stats = await getRepoDetails(item.repo);
 
       const embed = await createPluginEmbed(
@@ -563,7 +588,7 @@ module.exports = {
         });
       }
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     }
 
     /* ----- /search theme ----- */
@@ -578,6 +603,7 @@ module.exports = {
         });
       }
 
+      await interaction.deferReply();
       const stats = await getRepoDetails(item.repo);
 
       const embed = await createPluginEmbed(
@@ -617,7 +643,7 @@ module.exports = {
         });
       }
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     }
 
     /* ----- /search creator ----- */
@@ -654,8 +680,9 @@ module.exports = {
         });
       }
 
-      const payload = buildVersionPagePayload(mc, items, 1);
-      return interaction.reply(payload);
+      await interaction.deferReply();
+      const payload = await buildVersionPagePayload(mc, items, 1);
+      return interaction.editReply(payload);
     }
   },
 
@@ -703,8 +730,9 @@ module.exports = {
           });
         }
 
-        const payload = buildVersionPagePayload(mc, items, page);
-        return interaction.update(payload);
+        await interaction.deferUpdate();
+        const payload = await buildVersionPagePayload(mc, items, page);
+        return interaction.editReply(payload);
       }
     } catch (error) {
       console.error(
