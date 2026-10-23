@@ -142,7 +142,7 @@ function getItemsByCreator(creator, mc) {
 
   const themeItems = filterAndSort(getThemes, creator, mc)
     .filter(byCreator)
-    .map((it) => getThemeByName(it.name) || it);
+    .map((it) => ({ ...it, type: "theme" }));
 
   return [...pluginItems, ...themeItems];
 }
@@ -155,7 +155,7 @@ function getItemsByVersion(mc) {
     (it) => getPluginByName(it.name) || it,
   );
   const themeItems = filterAndSort(getThemes, "", mc).map(
-    (it) => getThemeByName(it.name) || it,
+    (it) => ({ ...it, type: "theme" }),
   );
 
   return [...pluginItems, ...themeItems];
@@ -254,17 +254,23 @@ function buildVersionPagePayload(mc, items, page) {
       title,
       desc,
       latestLine,
-      it.mc_versions ? `MC: \`${it.mc_versions}\`` : null,
     ]
       .filter(Boolean)
       .join("\n");
   });
 
+  const themeCount = items.filter(
+    (item) => item.type === "theme"
+  ).length;
+  const pluginCount = total - themeCount;
+
   const embed = new EmbedBuilder()
-    .setTitle(`Items supporting MC ${mc}`)
+    .setTitle(`Registry listings for MC ${mc}`)
     .setDescription(blocks)
     .setFooter({
-      text: `Page ${p}/${pageCount} • ${total} total`,
+      text: `Page ${p}/${pageCount} • ` +
+          `${pluginCount} ${pluginCount === 1 ? "plugin" : "plugins"} • ` +
+          `${themeCount} ${themeCount === 1 ? "theme" : "themes"}`,
     });
 
   const components = [];
@@ -312,11 +318,6 @@ module.exports = {
             .setDescription("Exact plugin name")
             .setRequired(true)
             .setAutocomplete(true),
-        )
-        .addStringOption((o) =>
-          o
-            .setName("mc_version")
-            .setDescription("Filter by MC version (e.g., 1.21.4)"),
         ),
     )
 
@@ -331,11 +332,6 @@ module.exports = {
             .setDescription("Exact theme name")
             .setRequired(true)
             .setAutocomplete(true),
-        )
-        .addStringOption((o) =>
-          o
-            .setName("mc_version")
-            .setDescription("Filter by MC version (e.g., 1.21.4)"),
         ),
     )
 
@@ -354,7 +350,8 @@ module.exports = {
         .addStringOption((o) =>
           o
             .setName("mc_version")
-            .setDescription("Filter by MC version (e.g., 1.21.4)"),
+            .setDescription("Choose a Minecraft version")
+            .setAutocomplete(true),
         ),
     )
 
@@ -368,8 +365,9 @@ module.exports = {
         .addStringOption((o) =>
           o
             .setName("mc_version")
-            .setDescription("Minecraft version, e.g., 1.21.4")
-            .setRequired(true),
+            .setDescription("Minecraft version")
+            .setRequired(true)
+            .setAutocomplete(true),
         ),
     ),
 
@@ -380,6 +378,53 @@ module.exports = {
       const focused = (
         interaction.options.getFocused(true)?.value || ""
       ).toLowerCase();
+
+      if (interaction.options.getFocused(true)?.name === "mc_version") {
+        let items = [...getPlugins(), ...getThemes()];
+
+        if (sub === "creator") {
+          // Read the creator already supplied in this interaction.
+          const creator = String(
+            interaction.options.get("name")?.value ||
+            interaction.options.getString("name") ||
+            ""
+          ).trim().toLowerCase();
+
+          if (!creator) {
+            return interaction.respond([]);
+          }
+
+          items = items.filter(
+            (item) =>
+              String(item.creator?.name || "")
+                .trim()
+                .toLowerCase() === creator
+          );
+        }
+
+        const versions = [...new Set(
+          items
+            .flatMap((item) =>
+              String(item.mc_versions || "").split(",")
+            )
+            .map((version) => version.trim())
+            .filter((version) =>
+              /^[0-9]+[.][0-9]+([.][0-9]+)?$/.test(version)
+            )
+        )].sort((a, b) =>
+          b.localeCompare(a, undefined, { numeric: true })
+        );
+
+        return interaction.respond(
+          versions
+            .filter((version) => version.includes(focused))
+            .slice(0, 25)
+            .map((version) => ({
+              name: version,
+              value: version,
+            }))
+        );
+      }
 
       if (sub === "plugin") {
         const names = getPlugins()
@@ -425,8 +470,19 @@ module.exports = {
           list.map((n) => ({ name: n, value: n })),
         );
       }
-    } catch {
-      // swallow autocomplete errors so they don't nuke the bot
+    } catch (error) {
+      console.error("[Search autocomplete] Failed:", error);
+
+      if (!interaction.responded) {
+        try {
+          await interaction.respond([]);
+        } catch (responseError) {
+          console.error(
+            "[Search autocomplete] Response failed:",
+            responseError
+          );
+        }
+      }
     }
   },
 
@@ -437,19 +493,11 @@ module.exports = {
     /* ----- /search plugin ----- */
     if (sub === "plugin") {
       const name = interaction.options.getString("name", true);
-      const mc = interaction.options.getString("mc_version") || "";
       const item = getPluginByName(name);
 
       if (!item) {
         return interaction.reply({
           content: `No plugin found with name **${name}**.`,
-          allowedMentions: { parse: [] },
-        });
-      }
-
-      if (mc && !isVersionSupported(item, mc)) {
-        return interaction.reply({
-          content: `Plugin **${name}** does not support MC \`${mc}\`.`,
           allowedMentions: { parse: [] },
         });
       }
@@ -499,19 +547,11 @@ module.exports = {
     /* ----- /search theme ----- */
     if (sub === "theme") {
       const name = interaction.options.getString("name", true);
-      const mc = interaction.options.getString("mc_version") || "";
       const item = getThemeByName(name);
 
       if (!item) {
         return interaction.reply({
           content: `No theme found with name **${name}**.`,
-          allowedMentions: { parse: [] },
-        });
-      }
-
-      if (mc && !isVersionSupported(item, mc)) {
-        return interaction.reply({
-          content: `Theme **${name}** does not support MC \`${mc}\`.`,
           allowedMentions: { parse: [] },
         });
       }
