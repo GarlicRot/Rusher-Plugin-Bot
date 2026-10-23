@@ -4,8 +4,9 @@ const GITHUB_API = "https://api.github.com";
 const CACHE_TTL = 10 * 60 * 1000;
 const SUMMARY_CACHE_TTL = 60 * 60 * 1000;
 const cache = new Map();
+const inFlight = new Map();
 
-async function getRepoDetails(repoSlug, { summaryOnly = false } = {}) {
+async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   if (
     typeof repoSlug !== "string" ||
     !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repoSlug)
@@ -107,6 +108,32 @@ async function getRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   });
 
   return stats;
+}
+
+// Share ongoing requests for the same repository and mode.
+async function getRepoDetails(repoSlug, { summaryOnly = false } = {}) {
+  if (
+    typeof repoSlug !== "string" ||
+    !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repoSlug)
+  ) {
+    return {};
+  }
+
+  const key = `${repoSlug.toLowerCase()}:${summaryOnly ? "summary" : "full"}`;
+
+  const existing = inFlight.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const request = fetchRepoDetails(repoSlug, { summaryOnly });
+  inFlight.set(key, request);
+
+  try {
+    return await request;
+  } finally {
+    inFlight.delete(key);
+  }
 }
 
 module.exports = { getRepoDetails };
