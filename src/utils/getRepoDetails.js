@@ -5,6 +5,61 @@ const CACHE_TTL = 10 * 60 * 1000;
 const SUMMARY_CACHE_TTL = 60 * 60 * 1000;
 const cache = new Map();
 const inFlight = new Map();
+let rateLimitUntil = 0;
+
+// Distinguish GitHub rate limits from ordinary permission errors.
+function recordRateLimit(error) {
+  const response = error?.response;
+
+  if (![403, 429].includes(response?.status)) return;
+
+  const headers = response.headers || {};
+  const remaining = String(headers["x-ratelimit-remaining"] ?? "");
+  const reset = Number(headers["x-ratelimit-reset"]);
+  const retryHeader = headers["retry-after"];
+  const retryAfter = Number(retryHeader);
+  const message = String(response.data?.message || "");
+
+  const isLimited =
+    remaining === "0" ||
+    response.status === 429 ||
+    retryHeader !== undefined ||
+    /secondary rate limit|abuse detection/i.test(message);
+
+  if (!isLimited) return;
+
+  const now = Date.now();
+  const deadlines = [];
+
+  if (
+    remaining === "0" &&
+    Number.isFinite(reset) &&
+    reset > 0
+  ) {
+    deadlines.push(reset * 1000 + 1000);
+  }
+
+  if (
+    retryHeader !== undefined &&
+    Number.isFinite(retryAfter) &&
+    retryAfter >= 0
+  ) {
+    deadlines.push(now + Math.max(1000, retryAfter * 1000));
+  }
+
+  const until = deadlines.length
+    ? Math.max(now + 1000, ...deadlines)
+    : now + 60000;
+
+  if (until > rateLimitUntil) {
+    rateLimitUntil = until;
+
+    console.warn(
+      `[GitHub] Rate limited; pausing requests until ` +
+      new Date(until).toISOString()
+    );
+  }
+}
 
 async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   if (
@@ -20,6 +75,13 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   if (cached && cached.expires > Date.now()) {
     return cached.data;
   }
+
+  // Cached data remains available during a GitHub cooldown.
+  if (Date.now() < rateLimitUntil) {
+    return {};
+  }
+
+  rateLimitUntil = 0;
 
   const headers = {
     "User-Agent": "RusherPluginBot",
@@ -94,6 +156,7 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       const error = result.reason;
+      recordRateLimit(error);
       console.warn(
         `[GitHub] ${repoSlug} ${labels[index]} failed: ` +
         (error.response?.status || error.message)
