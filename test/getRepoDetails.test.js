@@ -154,3 +154,154 @@ test("ordinary 403 errors do not trigger a rate-limit pause", async () => {
     axios.get = originalGet;
   }
 });
+
+test("preserves cached statistics during an API outage", async () => {
+  const originalGet = axios.get;
+  const originalNow = Date.now;
+  let now = originalNow();
+  let offline = false;
+  let calls = 0;
+
+  try {
+    Date.now = () => now;
+
+    axios.get = async (url) => {
+      calls++;
+
+      if (offline) throw new Error("GitHub unavailable");
+
+      return {
+        data: url.includes("/releases?")
+          ? [{ assets: [{ download_count: 520 }] }]
+          : { stargazers_count: 4 }
+      };
+    };
+
+    const repo = "StaleOwner/RecoveryRepo";
+    const options = { summaryOnly: true };
+
+    const first = await getRepoDetails(repo, options);
+    assert.equal(first.stars, 4);
+    assert.equal(first.downloadCount, 520);
+
+    now += 3600001;
+    offline = true;
+
+    const stale = await getRepoDetails(repo, options);
+
+    assert.equal(stale.stars, 4);
+    assert.equal(stale.downloadCount, 520);
+    assert.equal(calls, 4);
+
+    await getRepoDetails(repo, options);
+    assert.equal(calls, 4);
+
+    now += 30001;
+    offline = false;
+
+    const recovered = await getRepoDetails(repo, options);
+
+    assert.equal(recovered.stars, 4);
+    assert.equal(recovered.downloadCount, 520);
+    assert.equal(calls, 6);
+  } finally {
+    Date.now = originalNow;
+    axios.get = originalGet;
+  }
+});
+
+test("preserves downloads when only release API fails", async () => {
+  const originalGet = axios.get;
+  const originalNow = Date.now;
+  let now = originalNow();
+  let releaseFailure = false;
+
+  try {
+    Date.now = () => now;
+
+    axios.get = async (url) => {
+      if (url.includes("/releases?")) {
+        if (releaseFailure) throw new Error("Release API unavailable");
+
+        return {
+          data: [{ assets: [{ download_count: 520 }] }]
+        };
+      }
+
+      return {
+        data: { stargazers_count: releaseFailure ? 8 : 4 }
+      };
+    };
+
+    const repo = "PartialOwner/Repo";
+    const options = { summaryOnly: true };
+
+    await getRepoDetails(repo, options);
+
+    now += 3600001;
+    releaseFailure = true;
+
+    const updated = await getRepoDetails(repo, options);
+
+    assert.equal(updated.stars, 8);
+    assert.equal(updated.downloadCount, 520);
+  } finally {
+    Date.now = originalNow;
+    axios.get = originalGet;
+  }
+});
+
+test("uses stale statistics during GitHub rate limits", async () => {
+  const originalGet = axios.get;
+  const originalNow = Date.now;
+  let now = originalNow();
+  let calls = 0;
+
+  try {
+    Date.now = () => now;
+
+    axios.get = async (url) => {
+      calls++;
+
+      if (url.includes("/CooldownOwner/")) {
+        const error = new Error("Rate limit exceeded");
+        error.response = {
+          status: 403,
+          headers: {
+            "x-ratelimit-remaining": "0",
+            "x-ratelimit-reset": String(
+              Math.floor((now + 60000) / 1000)
+            )
+          },
+          data: { message: "API rate limit exceeded" }
+        };
+        throw error;
+      }
+
+      return {
+        data: url.includes("/releases?")
+          ? [{ assets: [{ download_count: 520 }] }]
+          : { stargazers_count: 4 }
+      };
+    };
+
+    const repo = "CachedOwner/Repo";
+    const options = { summaryOnly: true };
+
+    await getRepoDetails(repo, options);
+
+    now += 3600001;
+
+    await getRepoDetails("CooldownOwner/Repo", options);
+
+    const before = calls;
+    const stale = await getRepoDetails(repo, options);
+
+    assert.equal(stale.stars, 4);
+    assert.equal(stale.downloadCount, 520);
+    assert.equal(calls, before);
+  } finally {
+    Date.now = originalNow;
+    axios.get = originalGet;
+  }
+});

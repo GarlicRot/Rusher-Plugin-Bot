@@ -78,7 +78,7 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
 
   // Cached data remains available during a GitHub cooldown.
   if (Date.now() < rateLimitUntil) {
-    return {};
+    return cached?.data || {};
   }
 
   rateLimitUntil = 0;
@@ -111,7 +111,8 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   }
 
   const results = await Promise.allSettled(requests);
-  const stats = {};
+  const stats = { ...(cached?.data || {}) };
+  let receivedFreshData = false;
 
   const [repo, releases, commits] = results;
 
@@ -119,6 +120,7 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
     const stars = repo.value.data.stargazers_count;
     if (Number.isFinite(stars)) {
       stats.stars = stars;
+      receivedFreshData = true;
     }
   }
 
@@ -139,6 +141,7 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
           ),
         0
       );
+      receivedFreshData = true;
     }
   }
 
@@ -148,6 +151,7 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
 
     if (date) {
       stats.lastCommit = date;
+      receivedFreshData = true;
     }
   }
 
@@ -164,10 +168,16 @@ async function fetchRepoDetails(repoSlug, { summaryOnly = false } = {}) {
     }
   });
 
+  const ttl = receivedFreshData
+    ? (summaryOnly ? SUMMARY_CACHE_TTL : CACHE_TTL)
+    : 30_000;
+
   cache.set(key, {
     data: stats,
-    expires: Date.now() +
-      (Object.keys(stats).length ? (summaryOnly ? SUMMARY_CACHE_TTL : CACHE_TTL) : 30000),
+    expires: Date.now() + ttl,
+    lastSuccessfulResponseAt: receivedFreshData
+      ? Date.now()
+      : (cached?.lastSuccessfulResponseAt ?? null),
   });
 
   return stats;
