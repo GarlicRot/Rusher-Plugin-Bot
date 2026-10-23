@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { loadPluginData } = require("../../utils/dataStore");
 
 const DEV_USER_ID = "119982148945051651";
@@ -12,12 +12,12 @@ module.exports = {
     if (interaction.user.id !== DEV_USER_ID) {
       return interaction.reply({
         content: "❌ You are not authorized to use this command.",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     } catch (e) {
       console.error("Failed to defer reply:", e);
       return;

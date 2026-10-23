@@ -1,4 +1,5 @@
 const logger = require("../utils/logger");
+const { MessageFlags } = require("discord.js");
 
 module.exports = {
   name: "interactionCreate",
@@ -20,7 +21,6 @@ module.exports = {
 
           const payload = {
             content: "❌ An error occurred while processing this command.",
-            ephemeral: true,
           };
 
           // Use editReply if we've already replied/deferred, otherwise reply
@@ -32,7 +32,10 @@ module.exports = {
             typeof interaction.isRepliable === "function" &&
             interaction.isRepliable()
           ) {
-            await interaction.reply(payload).catch(() => {});
+            await interaction.reply({
+                  ...payload,
+                  flags: MessageFlags.Ephemeral,
+                }).catch(() => {});
           }
         }
       }

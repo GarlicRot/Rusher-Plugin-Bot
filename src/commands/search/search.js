@@ -1,5 +1,6 @@
 const {
   SlashCommandBuilder,
+  MessageFlags,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -661,7 +662,7 @@ module.exports = {
         try {
           await interaction.reply({
             ...fallback,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
         } catch {
           // ignore
