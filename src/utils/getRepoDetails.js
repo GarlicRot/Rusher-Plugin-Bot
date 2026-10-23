@@ -2,9 +2,10 @@ const axios = require("axios");
 
 const GITHUB_API = "https://api.github.com";
 const CACHE_TTL = 10 * 60 * 1000;
+const SUMMARY_CACHE_TTL = 60 * 60 * 1000;
 const cache = new Map();
 
-async function getRepoDetails(repoSlug) {
+async function getRepoDetails(repoSlug, { summaryOnly = false } = {}) {
   if (
     typeof repoSlug !== "string" ||
     !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repoSlug)
@@ -12,7 +13,7 @@ async function getRepoDetails(repoSlug) {
     return {};
   }
 
-  const key = repoSlug.toLowerCase();
+  const key = `${repoSlug.toLowerCase()}:${summaryOnly ? "summary" : "full"}`;
   const cached = cache.get(key);
 
   if (cached && cached.expires > Date.now()) {
@@ -40,8 +41,11 @@ async function getRepoDetails(repoSlug) {
   const requests = [
     axios.get(base, config),
     axios.get(`${base}/releases?per_page=100`, config),
-    axios.get(`${base}/commits?per_page=1`, config),
   ];
+
+  if (!summaryOnly) {
+    requests.push(axios.get(`${base}/commits?per_page=1`, config));
+  }
 
   const results = await Promise.allSettled(requests);
   const stats = {};
@@ -75,7 +79,7 @@ async function getRepoDetails(repoSlug) {
     }
   }
 
-  if (commits.status === "fulfilled") {
+  if (commits?.status === "fulfilled") {
     const date =
       commits.value.data[0]?.commit?.committer?.date;
 
@@ -99,7 +103,7 @@ async function getRepoDetails(repoSlug) {
   cache.set(key, {
     data: stats,
     expires: Date.now() +
-      (Object.keys(stats).length ? CACHE_TTL : 30000),
+      (Object.keys(stats).length ? (summaryOnly ? SUMMARY_CACHE_TTL : CACHE_TTL) : 30000),
   });
 
   return stats;

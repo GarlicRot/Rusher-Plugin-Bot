@@ -161,14 +161,36 @@ function getItemsByVersion(mc) {
   return [...pluginItems, ...themeItems];
 }
 
-function buildCreatorPagePayload(creator, mc, items, page) {
+async function buildCreatorPagePayload(creator, mc, items, page) {
   const { slice, p, pageCount, total } = paginate(items, page, PER_PAGE);
 
-  const blocks = toBlocks(slice, (it) => {
+  const githubStats = await Promise.all(
+    slice.map(async (item) => {
+      try {
+        return await getRepoDetails(item.repo, { summaryOnly: true });
+      } catch (error) {
+        console.warn(`[Creator stats] ${item.repo}: ${error.message}`);
+        return {};
+      }
+    })
+  );
+
+  const blocks = slice.map((it, index) => {
     const kind = labelForItem(it);
+    const stats = githubStats[index] || {};
+
+    const counts = [
+      Number.isFinite(stats.stars)
+        ? `★${stats.stars.toLocaleString("en-US")}`
+        : null,
+      Number.isFinite(stats.downloadCount)
+        ? `⬇${stats.downloadCount.toLocaleString("en-US")}`
+        : null,
+    ].filter(Boolean);
+
     const title = `**[${it.name}](${
       it.repo ? `https://github.com/${it.repo}` : "#"
-    })** — ${kind}`;
+    })** — ${kind}${counts.length ? ` — ${counts.join(" — ")}` : ""}`;
     const desc = truncate(it.description, 180);
 
     const url = getLatestUrl(it);
@@ -186,7 +208,7 @@ function buildCreatorPagePayload(creator, mc, items, page) {
     ]
       .filter(Boolean)
       .join("\n");
-  });
+  }).join("\n\n");
 
   const embed = new EmbedBuilder()
     .setTitle(`Items by Creator: ${creator}`)
@@ -614,8 +636,9 @@ module.exports = {
         });
       }
 
-      const payload = buildCreatorPagePayload(creator, mc, items, 1);
-      return interaction.reply(payload);
+      await interaction.deferReply();
+      const payload = await buildCreatorPagePayload(creator, mc, items, 1);
+      return interaction.editReply(payload);
     }
 
     /* ----- /search version ----- */
@@ -662,8 +685,9 @@ module.exports = {
           });
         }
 
-        const payload = buildCreatorPagePayload(creator, mc, items, page);
-        return interaction.update(payload);
+        await interaction.deferUpdate();
+        const payload = await buildCreatorPagePayload(creator, mc, items, page);
+        return interaction.editReply(payload);
       }
 
       if (mode === "version") {
@@ -694,7 +718,7 @@ module.exports = {
 
       if (interaction.deferred || interaction.replied) {
         try {
-          await interaction.update(fallback);
+          await interaction.editReply(fallback);
         } catch {
           // ignore
         }
