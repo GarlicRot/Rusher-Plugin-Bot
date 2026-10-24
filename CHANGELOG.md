@@ -4,6 +4,71 @@ This changelog is automatically generated from Git history.
 
 ---
 
+### 2026-10-24
+
+- Merge pull request #1 from GarlicRot/feature/v2-upgrade ([`7159209`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/71592095a07e057ae62cdda43a7a34b528139c9e)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- fix(github): preserve cached stats during API failures ([`3ef3a3e`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/3ef3a3efb477f0ef5c1fd43410c3a550cfec921f)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- fix(github): handle API rate limits and recovery ([`77a2e60`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/77a2e60cb91424fc03f132b762a177e35c8b9dda)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- fix(github): deduplicate concurrent API requests ([`a5d9c32`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/a5d9c32fa08076bf626b6ad4bbed5a8add5d3dc7)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- feat(search): polish embeds and unify GitHub statistics ([`760abdb`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/760abdbfbd5039c73113a580bd7cef7a748d8b85)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- feat(search): add GitHub stats to creator listings ([`891e69e`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/891e69e45ff0ec51141315f48ad6de0b019e410c)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- feat(search): improve version discovery and creator filtering ([`50d5173`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/50d5173931bf22cbcbb8028f960d29bbe29cfef0)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- fix(discord): replace deprecated ephemeral options ([`74c9e5b`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/74c9e5b45f4640d5728b53562eb6eb6e31a97ef3)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- ci: add automated tests and security checks ([`ff4d1a4`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/ff4d1a4fffa4d6827f8e83e01a152804a2358899)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- fix(registry): preserve valid data and improve refresh recovery ([`b3df3d7`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/b3df3d78b84f2e2a7a614e3928284ee30eddde80)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- fix: secure dependencies and improve GitHub API reliability ([`586205c`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/586205c38b843c0d2ff6031290c58e3eb5edf622)) by **GarlicRot**
+
+
+### 2026-10-23
+
+- chore(dev): add isolated Discord command registration ([`ded2ea7`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/ded2ea7d3ed3eafaafdf729dd2a115ce16e506f6)) by **GarlicRot**
+
+
+### 2026-01-27
+
+- docs(changelog): update changelog ([`955368e`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/955368ed477ed0fbae4f611c2625de8686a6f3a4)) by **github-actions[bot]**
+
+
 ### 2026-01-27
 
 - Enhance bot presence and uptime tracking ([`74f5e8f`](https://github.com/GarlicRot/Rusher-Plugin-Bot/commit/74f5e8fb7cf99e5139246973bdbb8d844efd5c69)) by **GarlicRot**
