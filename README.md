@@ -1,176 +1,157 @@
 <p align="center">
-  <img src="assets/Avatar.png" alt="Rusher Plugin Bot Avatar" width="200">
-  <br><br>
-  <img src="https://img.shields.io/github/last-commit/GarlicRot/Rusher-Plugin-Bot?excludeBots=true" />
-  <img src="https://img.shields.io/github/languages/code-size/GarlicRot/Rusher-Plugin-Bot" />
-  <a href="https://ptb.discord.com/oauth2/authorize?client_id=1402508845582123128&scope=bot">
-    <img src="https://img.shields.io/badge/Add%20to%20Discord-5865F2?logo=discord&logoColor=white" />
-  </a>
+  <img src="assets/Avatar.png" alt="Rusher Plugin Bot avatar" width="160">
 </p>
 
-# Rusher-Plugin-Bot
+<h1 align="center">Rusher Plugin Bot</h1>
 
-Rusher-Plugin-Bot is a Discord bot designed to explore and display information from the official
-[Rusherhack Plugin and Theme registry](https://github.com/RusherDevelopment/rusherhack-plugins).
-It provides fast, searchable access to plugin data directly inside Discord using slash commands and clean, structured embeds.
+<p align="center">
+  Explore the RusherHack plugin and theme registry, right inside Discord.
+</p>
 
-## Overview
-
-The bot retrieves plugin and theme metadata from the public
-[RusherDevelopment registry](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml)
-and formats it into clear informational responses. Its goal is to make discovering, comparing, and browsing
-Rusherhack extensions effortless without needing to search GitHub manually.
-
-## Features & Commands
-
-Rusher-Plugin-Bot provides fast, searchable access to the official Rusherhack Plugin & Theme registry directly inside Discord.  
-Every feature is powered by a clean, structured slash command system.
+<p align="center">
+  <a href="https://github.com/GarlicRot/Rusher-Plugin-Bot/actions/workflows/ci.yml"><img src="https://github.com/GarlicRot/Rusher-Plugin-Bot/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <img src="https://img.shields.io/github/last-commit/GarlicRot/Rusher-Plugin-Bot?excludeBots=true" alt="Last commit">
+  <img src="https://img.shields.io/github/languages/code-size/GarlicRot/Rusher-Plugin-Bot" alt="Code size">
+  <a href="https://discord.com/oauth2/authorize?client_id=1402508845582123128&scope=bot%20applications.commands"><img src="https://img.shields.io/badge/Add%20to%20Discord-5865F2?logo=discord&logoColor=white" alt="Add to Discord"></a>
+</p>
 
 ---
 
-## `/search plugin`
-Look up any plugin by name and instantly view:
+Rusher Plugin Bot makes it easy to discover community plugins and themes for **RusherHack** without leaving Discord. It reads from the official [RusherDevelopment plugin and theme registry](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml), then presents the available information using searchable slash commands, autocomplete, and clean embeds.
 
-- Description and purpose  
-- Latest release info  
-- Supported MC versions  
-- Creator details & avatar  
-- GitHub metadata (stars, commits, downloads)
+The registry is the source of truth for plugin listings and Minecraft versions. GitHub repository statistics are optional enhancements, not compatibility guarantees.
+
+## Commands
+
+| Command | Options | Description |
+| --- | --- | --- |
+| `/search plugin` | `name` — required | Look up an individual plugin. |
+| `/search theme` | `name` — required | Look up an individual theme. |
+| `/search creator` | `name` — required; `mc_version` — optional | Browse plugins and themes by creator, optionally filtering by Minecraft version. |
+| `/search version` | `mc_version` — required | Browse registry entries listed for a specific Minecraft version. |
+| `/refresh` | No options | Refresh the registry (maintainer-only). |
+
+All search options support autocomplete where applicable. **Plugin and theme searches use only the `name` option**; Minecraft-version filtering is available in creator and version searches.
+
+### `/search plugin`
+
+Search for a plugin by name to view its description, creator, latest release, complete list of Minecraft versions recorded in the registry, and available GitHub information. Core plugins are visually distinguished from other plugins.
 
 <details>
-<summary><strong>Screenshots</strong></summary>
+<summary><strong>Screenshot</strong></summary>
 
-<p align="center">
-  <img src="assets/PluginEmbed.png" width="600">
-</p>
-
-<p align="center">
-  <img src="assets/plugin.png" width="600">
-</p>
+<p align="center"><img src="assets/PluginEmbed.png" alt="Plugin details embed" width="620"></p>
 
 </details>
 
-<details>
-<summary><strong>Parameters</strong></summary>
+### `/search theme`
 
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `name` | string | Yes | Exact plugin name (autocomplete enabled) |
-| `mc_version` | string | No | Filter by a specific Minecraft version |
+Find a theme by name and view its creator, description, release details, listed Minecraft versions, and available GitHub information in a purple-accented embed.
+
+<details>
+<summary><strong>Screenshot</strong></summary>
+
+<p align="center"><img src="assets/ThemeEmbed.png" alt="Theme details embed" width="620"></p>
 
 </details>
 
----
+### `/search creator`
 
-## `/search theme`
-Find UI themes using the same structured embed output used for plugins.
+Browse every plugin and theme listed for a particular creator. Results include descriptions, latest release links, the **full list of Minecraft versions** recorded for each entry, and available GitHub stars and release-asset download counts.
+
+- Five items per page, with **Previous** and **Next** buttons.
+- Autocomplete for creator names.
+- Optional `mc_version` filter with suggestions derived from that creator's registry entries.
 
 <details>
-<summary><strong>Screenshots</strong></summary>
+<summary><strong>Screenshot</strong></summary>
 
-<p align="center">
-  <img src="assets/ThemeEmbed.png" width="600">
-</p>
-
-<p align="center">
-  <img src="assets/theme.png" width="600">
-</p>
+<p align="center"><img src="assets/CreatorEmbed.png" alt="Creator results embed" width="620"></p>
 
 </details>
 
-<details>
-<summary><strong>Parameters</strong></summary>
+### `/search version`
 
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `name` | string | Yes | Exact theme name (autocomplete enabled) |
-| `mc_version` | string | No | Filter by Minecraft version |
+Choose a Minecraft version from autocomplete to see plugins and themes listed for it in the official registry. Results use a gold-accented embed and include descriptions, latest releases, and available GitHub stars and downloads.
+
+- Five items per page, with **Previous** and **Next** buttons.
+- Autocomplete is populated from Minecraft versions recorded in the registry.
+- Plugin and theme counts are shown in the results footer.
+
+<details>
+<summary><strong>Screenshot</strong></summary>
+
+<p align="center"><img src="assets/VersionEmbed.png" alt="Minecraft version results embed" width="620"></p>
 
 </details>
 
----
+> **Note:** Screenshots may show an earlier version of the interface. Command descriptions above reflect v2.
 
-## `/search creator`
-List all plugins & themes by a specific creator.  
-Uses interactive pagination buttons for browsing.
+## How It Works
 
-<details>
-<summary><strong>Screenshots</strong></summary>
+### Registry data
 
-<p align="center">
-  <img src="assets/CreatorEmbed.png" width="600">
-</p>
+The bot loads the public [plugins-and-themes.yml](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml) maintained by RusherDevelopment. It normalizes the entries for searching, refreshes the registry periodically, and uses cached data when GitHub is temporarily unavailable. Searches do not depend on live GitHub repository statistics.
 
-<p align="center">
-  <img src="assets/creator.png" width="600">
-</p>
+Minecraft versions displayed by the bot are **versions listed in the registry**, not a guarantee that every plugin has been independently tested against that version.
 
-</details>
+### GitHub statistics
 
-<details>
-<summary><strong>Parameters</strong></summary>
+Where available, embeds include:
 
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `name` | string | Yes | Creator name (autocomplete enabled) |
-| `mc_version` | string | No | Filter by Minecraft version |
+- **Stars** from the plugin's GitHub repository.
+- **Downloads** summed from GitHub release assets (not unique users or installations).
+- **Last commit** information on individual plugin and theme details.
 
-</details>
+v2 uses request deduplication, a statistics cache, GitHub API rate-limit protection, and last-known-good statistics during temporary API failures. A `GITHUB_TOKEN` is optional but recommended for higher GitHub API limits. Statistics may be missing if GitHub has not supplied them. **Statistics caching is currently in memory and resets when the bot restarts.**
 
----
+## Running Locally
 
-## `/search version`
-View all plugins & themes supporting a specific MC version or version range (e.g. `1.20.1–1.21.4`).
+The project uses **Node.js 24** in GitHub Actions.
 
-<details>
-<summary><strong>Screenshots</strong></summary>
+```bash
+git clone https://github.com/GarlicRot/Rusher-Plugin-Bot.git
+cd Rusher-Plugin-Bot
+npm ci
+```
 
-<p align="center">
-  <img src="assets/VersionEmbed.png" width="600">
-</p>
+Create a local `.env` file with the credentials for **your own Discord application**:
 
-<p align="center">
-  <img src="assets/mcversion.png" width="600">
-</p>
+```dotenv
+DISCORD_TOKEN=your_discord_bot_token
+CLIENT_ID=your_discord_application_id
+GITHUB_TOKEN=your_optional_github_token
+```
 
-</details>
+Then start the bot:
 
-<details>
-<summary><strong>Parameters</strong></summary>
+```bash
+npm start
+```
 
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `mc_version` | string | Yes | Version or range to match (e.g. `1.21.4`) |
+Starting the process does **not** register Discord slash commands. Registration is a separate operation. The repository's `scripts/deploy-dev.js` is specifically restricted to the maintainer's development application and test server; it is not a general-purpose registration script. **`npm run register` replaces the application's global commands**, so only use it when you deliberately intend to register commands for the application identified by your credentials.
 
-</details>
+Never publish a `.env` file or share your Discord or GitHub tokens.
 
----
+### Tests
 
-### How It Works
+```bash
+node --test test/*.test.js
+npm audit --omit=dev
+```
 
-- Loads the official
-  [`plugins-and-themes.yml`](https://github.com/RusherDevelopment/rusherhack-plugins/blob/main/data/plugins-and-themes.yml)
-  from GitHub
-- Normalizes and caches plugin/theme metadata in memory for fast lookup
-- Enriches results with GitHub repository information (stars, downloads, last commit)
-- Supports autocomplete for plugin, theme, and creator names
-- Supports version filtering and button-based pagination
-- Provides direct release download links when available
-- Formats output using structured Discord embeds with creator attribution and bot footer branding
+The [CI workflow](.github/workflows/ci.yml) runs syntax checks, automated tests, and a dependency security audit.
 
+## Deployment and Rollback
 
-## Changelog
+The official bot runs under systemd using versioned releases and a `current` symlink. The release directory is prepared and tested separately, and the previous release is retained for rollback. Production configuration remains private, and updating global slash commands is treated as a separate deployment step.
 
-This project maintains an automatically generated changelog in [CHANGELOG.md](./CHANGELOG.md).  
-The changelog is built from the Git commit history by a GitHub Actions workflow and is ordered from newest to oldest changes.
+Bot code and Discord's registered command definitions are separate: after changing slash-command options, the new definitions must be registered with Discord. Existing commands should be backed up before doing so.
 
 ## Contributing
 
-Contributions, suggestions, and improvements are welcome.
+Issues, bug reports, and pull requests are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines. The [CHANGELOG.md](CHANGELOG.md) is generated from the repository's commit history by GitHub Actions.
 
-- Open an issue if you find a bug or want to request a feature.
-- Submit a pull request for bug fixes, enhancements, or documentation updates.
-- Keep changes focused and clearly described in the PR description.
-- For larger changes, consider opening an issue first to discuss the approach.
+---
 
-A dedicated [CONTRIBUTING.md](./CONTRIBUTING.md) file will describe the full contribution process and coding guidelines.
+<p align="center"><sub>Independent community project · Registry data provided by <a href="https://github.com/RusherDevelopment/rusherhack-plugins">RusherDevelopment</a></sub></p>
