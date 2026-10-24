@@ -1,108 +1,206 @@
-// src/utils/dataStore.js
 const fetch = require("node-fetch");
 const yaml = require("js-yaml");
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const logger = require("./logger");
 
-const RAW_YML_URL =
+const REGISTRY_URL =
   "https://raw.githubusercontent.com/RusherDevelopment/rusherhack-plugins/main/data/plugins-and-themes.yml";
-const BACKUP_PATH = path.join(__dirname, "..", "cache", "plugins-and-themes.yml");
 
-let plugins = [];
-let themes = [];
+const CACHE_PATH = path.join(
+  __dirname, "..", "cache", "plugins-and-themes.yml"
+);
 
-/**
- * Ensure mc_versions is always a string so downstream code
- * (search, version filtering) can safely call .split(",").
- */
-function normalizeMcVersions(list, kind) {
-  for (const item of list) {
-    if (typeof item.mc_versions !== "string") {
-      logger.warn(
-        `Invalid mc_versions for ${kind} ${item.name}: ${JSON.stringify(
-          item.mc_versions,
-        )} (coercing to string)`,
-      );
-      item.mc_versions = String(item.mc_versions || "");
+function createDataStore({
+  fetchRegistry = fetch,
+  cachePath = CACHE_PATH,
+  registryUrl = REGISTRY_URL,
+  log = logger,
+} = {}) {
+  let plugins = [];
+  let themes = [];
+  let lastLiveRefresh = null;
+  let pendingRefresh = null;
+
+  function parseRegistry(raw) {
+    const parsed = yaml.load(raw);
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.plugins) ||
+      !Array.isArray(parsed.themes)
+    ) {
+      throw new Error("Invalid registry structure");
     }
+
+    if (!parsed.plugins.length && !parsed.themes.length) {
+      throw new Error("Registry contains no entries");
+    }
+
+    function normalize(items, kind) {
+      return items.map((item, index) => {
+        if (
+          !item ||
+          typeof item.name !== "string" ||
+          !item.name.trim() ||
+          typeof item.repo !== "string" ||
+          !item.repo.trim()
+        ) {
+          throw new Error(
+            `Invalid ${kind} entry at index ${index}`
+          );
+        }
+
+        return {
+          ...item,
+          mc_versions: String(item.mc_versions ?? ""),
+        };
+      });
+    }
+
+    return {
+      plugins: normalize(parsed.plugins, "plugin"),
+      themes: normalize(parsed.themes, "theme"),
+    };
   }
-}
 
-/**
- * Fetches the YAML and saves it locally.
- */
-async function loadPluginData() {
-  try {
-    const res = await fetch(RAW_YML_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  function saveCache(raw) {
+    fs.mkdirSync(path.dirname(cachePath), {
+      recursive: true,
+    });
 
-    const text = await res.text();
-    const parsed = yaml.load(text);
+    const temporary = `${cachePath}.${process.pid}.${Date.now()}.tmp`;
 
-    plugins = parsed.plugins || [];
-    themes = parsed.themes || [];
-
-    normalizeMcVersions(plugins, "plugin");
-    normalizeMcVersions(themes, "theme");
-
-    fs.mkdirSync(path.dirname(BACKUP_PATH), { recursive: true });
-    fs.writeFileSync(BACKUP_PATH, text, "utf8");
-
-    logger.success(`Loaded ${plugins.length} plugins and ${themes.length} themes`);
-  } catch (err) {
-    logger.error("Failed to fetch or parse plugin YAML from GitHub:");
-    logger.error(err.stack || String(err));
-
-    // Fallback to disk
     try {
-      const cached = fs.readFileSync(BACKUP_PATH, "utf8");
-      const parsed = yaml.load(cached);
-
-      plugins = parsed.plugins || [];
-      themes = parsed.themes || [];
-
-      normalizeMcVersions(plugins, "plugin");
-      normalizeMcVersions(themes, "theme");
-
-      logger.warn(
-        `Used cached YAML data from disk (${plugins.length} plugins, ${themes.length} themes)`,
-      );
-    } catch (fallbackError) {
-      logger.error("Failed to load cached YAML from disk as fallback");
-      logger.error(fallbackError.stack || String(fallbackError));
-
-      // Leave plugins/themes as empty arrays if both live + fallback fail
-      plugins = [];
-      themes = [];
+      fs.writeFileSync(temporary, raw, { flag: "wx" });
+      fs.renameSync(temporary, cachePath);
+    } finally {
+      if (fs.existsSync(temporary)) {
+        fs.unlinkSync(temporary);
+      }
     }
   }
-}
 
-function getPlugins() {
-  return plugins;
-}
+  async function performRefresh() {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(
+        () => controller.abort(),
+        8000
+      );
 
-function getThemes() {
-  return themes;
-}
+      let raw;
 
-function getPluginByName(name) {
-  return plugins.find(
-    (p) => p.name && p.name.toLowerCase() === name.toLowerCase(),
-  );
-}
+      try {
+        const response = await fetchRegistry(registryUrl, {
+          signal: controller.signal,
+          size: 2 * 1024 * 1024,
+        });
 
-function getThemeByName(name) {
-  return themes.find(
-    (t) => t.name && t.name.toLowerCase() === name.toLowerCase(),
-  );
+        if (!response.ok) {
+          throw new Error(`GitHub HTTP ${response.status}`);
+        }
+
+        raw = await response.text();
+      } finally {
+        clearTimeout(timer);
+      }
+
+      const next = parseRegistry(raw);
+      let cacheUpdated = true;
+
+      try {
+        saveCache(raw);
+      } catch (error) {
+        cacheUpdated = false;
+        log.warn(`Registry cache write failed: ${error.message}`);
+      }
+
+      plugins = next.plugins;
+      themes = next.themes;
+      lastLiveRefresh = new Date().toISOString();
+
+      log.success(
+        `Registry loaded: ${plugins.length} plugins, ` +
+        `${themes.length} themes`
+      );
+
+      return {
+        source: "github",
+        plugins: plugins.length,
+        themes: themes.length,
+        cacheUpdated,
+        lastLiveRefresh,
+      };
+    } catch (error) {
+      log.warn(`GitHub registry refresh failed: ${error.message}`);
+
+      // Never replace valid in-memory data with stale or empty data.
+      if (plugins.length || themes.length) {
+        log.warn("Preserving last-known-good in-memory registry");
+
+        return {
+          source: "memory",
+          plugins: plugins.length,
+          themes: themes.length,
+          lastLiveRefresh,
+        };
+      }
+
+      // Cold startup: attempt the validated disk cache.
+      try {
+        const raw = fs.readFileSync(cachePath, "utf8");
+        const next = parseRegistry(raw);
+
+        plugins = next.plugins;
+        themes = next.themes;
+
+        log.warn(
+          `Using cached registry: ${plugins.length} plugins, ` +
+          `${themes.length} themes`
+        );
+
+        return {
+          source: "cache",
+          plugins: plugins.length,
+          themes: themes.length,
+          lastLiveRefresh,
+        };
+      } catch (cacheError) {
+        throw new Error(
+          `Registry unavailable: GitHub (${error.message}); ` +
+          `cache (${cacheError.message})`
+        );
+      }
+    }
+  }
+
+  function loadPluginData() {
+    if (!pendingRefresh) {
+      pendingRefresh = performRefresh().finally(() => {
+        pendingRefresh = null;
+      });
+    }
+
+    return pendingRefresh;
+  }
+
+  return {
+    loadPluginData,
+    getPlugins: () => plugins,
+    getThemes: () => themes,
+    getPluginByName: (name) =>
+      plugins.find(
+        (p) => p.name.toLowerCase() === String(name).toLowerCase()
+      ),
+    getThemeByName: (name) =>
+      themes.find(
+        (t) => t.name.toLowerCase() === String(name).toLowerCase()
+      ),
+  };
 }
 
 module.exports = {
-  loadPluginData,
-  getPlugins,
-  getThemes,
-  getPluginByName,
-  getThemeByName,
+  ...createDataStore(),
+  createDataStore,
 };

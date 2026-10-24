@@ -35,7 +35,7 @@ function createPluginEmbed(
   const repoUrl = `https://github.com/${data.repo}`;
 
   const embed = new EmbedBuilder()
-    .setColor(data.is_core ? 0x3498db : 0x00ff88)
+    .setColor(isPlugin ? (data.is_core ? 0x3498db : 0x00ff88) : 0x9b59b6)
     .setTitle(data.name || "Unnamed Plugin")
     .setURL(repoUrl)
     .setDescription(
@@ -46,8 +46,7 @@ function createPluginEmbed(
     .setFooter({
       text: "Rusher Plugin Bot",
       iconURL: getBotAvatarURL(client),
-    })
-    .setTimestamp(Date.now());
+    });
 
   if (data.creator?.name || data.creator?.avatar) {
     embed.setAuthor({
@@ -56,55 +55,65 @@ function createPluginEmbed(
     });
   }
 
-  let combinedInfo = "";
+  const fields = [];
+  const infoLines = [];
 
-  if (data.mc_versions) {
-    combinedInfo += `**MC Versions:** ${data.mc_versions}\n`;
+  if (isPlugin && data.is_core === true) {
+    infoLines.push("**Core Plugin**");
   }
 
-  if (data.is_core !== undefined) {
-    combinedInfo += `**Core Plugin:** ${data.is_core ? "✅" : "❌"}\n`;
+  if (data.mc_versions) {
+    infoLines.push(
+      `**Listed MC Versions:** ${data.mc_versions}`
+    );
+  }
+
+  if (infoLines.length) {
+    fields.push({
+      name: isPlugin ? "Plugin Details" : "Theme Details",
+      value: infoLines.join("\n"),
+      inline: false,
+    });
   }
 
   const { stars, lastCommit, downloadCount } = githubInfo || {};
-  let githubStats = "";
+  const statsLines = [];
 
-  if (stars !== undefined) {
-    githubStats += `**Stars:** ${stars}\n`;
+  if (Number.isFinite(stars)) {
+    statsLines.push(
+      `★ **Stars:** ${stars.toLocaleString("en-US")}`
+    );
   }
 
-  if (downloadCount !== undefined) {
-    githubStats += `**Downloads:** ${downloadCount}\n`;
+  if (Number.isFinite(downloadCount)) {
+    statsLines.push(
+      `⬇ **Downloads:** ${downloadCount.toLocaleString("en-US")}`
+    );
   }
 
   if (lastCommit) {
-    const commitDate = new Date(lastCommit).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-    githubStats += `**Last Commit:** ${commitDate}`;
+    const date = new Date(lastCommit);
+
+    if (!Number.isNaN(date.getTime())) {
+      const formatted = date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+
+      statsLines.push(`**Last Commit:** ${formatted}`);
+    }
   }
 
-  const fields = [];
-
-  if (combinedInfo.trim().length > 0) {
+  if (statsLines.length) {
     fields.push({
-      name: isPlugin ? "- Plugin Info:" : "- Theme Info:",
-      value: combinedInfo.trim(),
+      name: "GitHub",
+      value: statsLines.join("\n"),
       inline: true,
     });
   }
 
-  if (githubStats.trim().length > 0) {
-    fields.push({
-      name: "- GitHub Stats:",
-      value: githubStats.trim(),
-      inline: true,
-    });
-  }
-
-  if (fields.length > 0) {
+  if (fields.length) {
     embed.addFields(fields);
   }
 

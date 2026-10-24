@@ -1,5 +1,6 @@
 const {
   SlashCommandBuilder,
+  MessageFlags,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -141,7 +142,7 @@ function getItemsByCreator(creator, mc) {
 
   const themeItems = filterAndSort(getThemes, creator, mc)
     .filter(byCreator)
-    .map((it) => getThemeByName(it.name) || it);
+    .map((it) => ({ ...it, type: "theme" }));
 
   return [...pluginItems, ...themeItems];
 }
@@ -154,20 +155,42 @@ function getItemsByVersion(mc) {
     (it) => getPluginByName(it.name) || it,
   );
   const themeItems = filterAndSort(getThemes, "", mc).map(
-    (it) => getThemeByName(it.name) || it,
+    (it) => ({ ...it, type: "theme" }),
   );
 
   return [...pluginItems, ...themeItems];
 }
 
-function buildCreatorPagePayload(creator, mc, items, page) {
+async function buildCreatorPagePayload(creator, mc, items, page) {
   const { slice, p, pageCount, total } = paginate(items, page, PER_PAGE);
 
-  const blocks = toBlocks(slice, (it) => {
+  const githubStats = await Promise.all(
+    slice.map(async (item) => {
+      try {
+        return await getRepoDetails(item.repo, { summaryOnly: true });
+      } catch (error) {
+        console.warn(`[Creator stats] ${item.repo}: ${error.message}`);
+        return {};
+      }
+    })
+  );
+
+  const blocks = slice.map((it, index) => {
     const kind = labelForItem(it);
+    const stats = githubStats[index] || {};
+
+    const counts = [
+      Number.isFinite(stats.stars)
+        ? `★${stats.stars.toLocaleString("en-US")}`
+        : null,
+      Number.isFinite(stats.downloadCount)
+        ? `⬇${stats.downloadCount.toLocaleString("en-US")}`
+        : null,
+    ].filter(Boolean);
+
     const title = `**[${it.name}](${
       it.repo ? `https://github.com/${it.repo}` : "#"
-    })** — ${kind}`;
+    })** — ${kind}${counts.length ? ` — ${counts.join(" — ")}` : ""}`;
     const desc = truncate(it.description, 180);
 
     const url = getLatestUrl(it);
@@ -185,9 +208,10 @@ function buildCreatorPagePayload(creator, mc, items, page) {
     ]
       .filter(Boolean)
       .join("\n");
-  });
+  }).join("\n\n");
 
   const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
     .setTitle(`Items by Creator: ${creator}`)
     .setDescription(blocks)
     .setFooter({
@@ -232,14 +256,36 @@ function buildCreatorPagePayload(creator, mc, items, page) {
   };
 }
 
-function buildVersionPagePayload(mc, items, page) {
+async function buildVersionPagePayload(mc, items, page) {
   const { slice, p, pageCount, total } = paginate(items, page, PER_PAGE);
 
-  const blocks = toBlocks(slice, (it) => {
+  const githubStats = await Promise.all(
+    slice.map(async (item) => {
+      try {
+        return await getRepoDetails(item.repo, { summaryOnly: true });
+      } catch (error) {
+        console.warn(`[Version stats] ${item.repo}: ${error.message}`);
+        return {};
+      }
+    })
+  );
+
+  const blocks = slice.map((it, index) => {
     const kind = labelForItem(it);
+    const stats = githubStats[index] || {};
+
+    const counts = [
+      Number.isFinite(stats.stars)
+        ? `★${stats.stars.toLocaleString("en-US")}`
+        : null,
+      Number.isFinite(stats.downloadCount)
+        ? `⬇${stats.downloadCount.toLocaleString("en-US")}`
+        : null,
+    ].filter(Boolean);
+
     const title = `**[${it.name}](${
       it.repo ? `https://github.com/${it.repo}` : "#"
-    })** — ${kind}`;
+    })** — ${kind}${counts.length ? ` — ${counts.join(" — ")}` : ""}`;
     const desc = truncate(it.description, 180);
 
     const url = getLatestUrl(it);
@@ -253,17 +299,24 @@ function buildVersionPagePayload(mc, items, page) {
       title,
       desc,
       latestLine,
-      it.mc_versions ? `MC: \`${it.mc_versions}\`` : null,
     ]
       .filter(Boolean)
       .join("\n");
-  });
+  }).join("\n\n");
+
+  const themeCount = items.filter(
+    (item) => item.type === "theme"
+  ).length;
+  const pluginCount = total - themeCount;
 
   const embed = new EmbedBuilder()
-    .setTitle(`Items supporting MC ${mc}`)
+    .setColor(0xf1c40f)
+    .setTitle(`Registry listings for MC ${mc}`)
     .setDescription(blocks)
     .setFooter({
-      text: `Page ${p}/${pageCount} • ${total} total`,
+      text: `Page ${p}/${pageCount} • ` +
+          `${pluginCount} ${pluginCount === 1 ? "plugin" : "plugins"} • ` +
+          `${themeCount} ${themeCount === 1 ? "theme" : "themes"}`,
     });
 
   const components = [];
@@ -311,11 +364,6 @@ module.exports = {
             .setDescription("Exact plugin name")
             .setRequired(true)
             .setAutocomplete(true),
-        )
-        .addStringOption((o) =>
-          o
-            .setName("mc_version")
-            .setDescription("Filter by MC version (e.g., 1.21.4)"),
         ),
     )
 
@@ -330,11 +378,6 @@ module.exports = {
             .setDescription("Exact theme name")
             .setRequired(true)
             .setAutocomplete(true),
-        )
-        .addStringOption((o) =>
-          o
-            .setName("mc_version")
-            .setDescription("Filter by MC version (e.g., 1.21.4)"),
         ),
     )
 
@@ -353,7 +396,8 @@ module.exports = {
         .addStringOption((o) =>
           o
             .setName("mc_version")
-            .setDescription("Filter by MC version (e.g., 1.21.4)"),
+            .setDescription("Choose a Minecraft version")
+            .setAutocomplete(true),
         ),
     )
 
@@ -367,8 +411,9 @@ module.exports = {
         .addStringOption((o) =>
           o
             .setName("mc_version")
-            .setDescription("Minecraft version, e.g., 1.21.4")
-            .setRequired(true),
+            .setDescription("Minecraft version")
+            .setRequired(true)
+            .setAutocomplete(true),
         ),
     ),
 
@@ -379,6 +424,53 @@ module.exports = {
       const focused = (
         interaction.options.getFocused(true)?.value || ""
       ).toLowerCase();
+
+      if (interaction.options.getFocused(true)?.name === "mc_version") {
+        let items = [...getPlugins(), ...getThemes()];
+
+        if (sub === "creator") {
+          // Read the creator already supplied in this interaction.
+          const creator = String(
+            interaction.options.get("name")?.value ||
+            interaction.options.getString("name") ||
+            ""
+          ).trim().toLowerCase();
+
+          if (!creator) {
+            return interaction.respond([]);
+          }
+
+          items = items.filter(
+            (item) =>
+              String(item.creator?.name || "")
+                .trim()
+                .toLowerCase() === creator
+          );
+        }
+
+        const versions = [...new Set(
+          items
+            .flatMap((item) =>
+              String(item.mc_versions || "").split(",")
+            )
+            .map((version) => version.trim())
+            .filter((version) =>
+              /^[0-9]+[.][0-9]+([.][0-9]+)?$/.test(version)
+            )
+        )].sort((a, b) =>
+          b.localeCompare(a, undefined, { numeric: true })
+        );
+
+        return interaction.respond(
+          versions
+            .filter((version) => version.includes(focused))
+            .slice(0, 25)
+            .map((version) => ({
+              name: version,
+              value: version,
+            }))
+        );
+      }
 
       if (sub === "plugin") {
         const names = getPlugins()
@@ -424,8 +516,19 @@ module.exports = {
           list.map((n) => ({ name: n, value: n })),
         );
       }
-    } catch {
-      // swallow autocomplete errors so they don't nuke the bot
+    } catch (error) {
+      console.error("[Search autocomplete] Failed:", error);
+
+      if (!interaction.responded) {
+        try {
+          await interaction.respond([]);
+        } catch (responseError) {
+          console.error(
+            "[Search autocomplete] Response failed:",
+            responseError
+          );
+        }
+      }
     }
   },
 
@@ -436,7 +539,6 @@ module.exports = {
     /* ----- /search plugin ----- */
     if (sub === "plugin") {
       const name = interaction.options.getString("name", true);
-      const mc = interaction.options.getString("mc_version") || "";
       const item = getPluginByName(name);
 
       if (!item) {
@@ -446,13 +548,7 @@ module.exports = {
         });
       }
 
-      if (mc && !isVersionSupported(item, mc)) {
-        return interaction.reply({
-          content: `Plugin **${name}** does not support MC \`${mc}\`.`,
-          allowedMentions: { parse: [] },
-        });
-      }
-
+      await interaction.deferReply();
       const stats = await getRepoDetails(item.repo);
 
       const embed = await createPluginEmbed(
@@ -492,13 +588,12 @@ module.exports = {
         });
       }
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     }
 
     /* ----- /search theme ----- */
     if (sub === "theme") {
       const name = interaction.options.getString("name", true);
-      const mc = interaction.options.getString("mc_version") || "";
       const item = getThemeByName(name);
 
       if (!item) {
@@ -508,13 +603,7 @@ module.exports = {
         });
       }
 
-      if (mc && !isVersionSupported(item, mc)) {
-        return interaction.reply({
-          content: `Theme **${name}** does not support MC \`${mc}\`.`,
-          allowedMentions: { parse: [] },
-        });
-      }
-
+      await interaction.deferReply();
       const stats = await getRepoDetails(item.repo);
 
       const embed = await createPluginEmbed(
@@ -554,7 +643,7 @@ module.exports = {
         });
       }
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     }
 
     /* ----- /search creator ----- */
@@ -573,8 +662,9 @@ module.exports = {
         });
       }
 
-      const payload = buildCreatorPagePayload(creator, mc, items, 1);
-      return interaction.reply(payload);
+      await interaction.deferReply();
+      const payload = await buildCreatorPagePayload(creator, mc, items, 1);
+      return interaction.editReply(payload);
     }
 
     /* ----- /search version ----- */
@@ -590,8 +680,9 @@ module.exports = {
         });
       }
 
-      const payload = buildVersionPagePayload(mc, items, 1);
-      return interaction.reply(payload);
+      await interaction.deferReply();
+      const payload = await buildVersionPagePayload(mc, items, 1);
+      return interaction.editReply(payload);
     }
   },
 
@@ -621,8 +712,9 @@ module.exports = {
           });
         }
 
-        const payload = buildCreatorPagePayload(creator, mc, items, page);
-        return interaction.update(payload);
+        await interaction.deferUpdate();
+        const payload = await buildCreatorPagePayload(creator, mc, items, page);
+        return interaction.editReply(payload);
       }
 
       if (mode === "version") {
@@ -638,8 +730,9 @@ module.exports = {
           });
         }
 
-        const payload = buildVersionPagePayload(mc, items, page);
-        return interaction.update(payload);
+        await interaction.deferUpdate();
+        const payload = await buildVersionPagePayload(mc, items, page);
+        return interaction.editReply(payload);
       }
     } catch (error) {
       console.error(
@@ -653,7 +746,7 @@ module.exports = {
 
       if (interaction.deferred || interaction.replied) {
         try {
-          await interaction.update(fallback);
+          await interaction.editReply(fallback);
         } catch {
           // ignore
         }
@@ -661,7 +754,7 @@ module.exports = {
         try {
           await interaction.reply({
             ...fallback,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
         } catch {
           // ignore
